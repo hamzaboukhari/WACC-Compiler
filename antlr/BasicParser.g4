@@ -21,7 +21,7 @@ stat : SKIP
 	| EXIT expr
 	| PRINT expr
 	| PRINTLN expr
-	| IF expr THEN stat ELSE stat FI
+	| IF expr THEN stat ELSE stat ENDIF
 	| WHILE expr DO stat DONE
 	| BEGIN stat END
 	| stat SEMICOLON stat
@@ -36,7 +36,7 @@ assign_rhs : expr ;
 	| array_liter ;
 	| NEWPAIR OPEN_PARENTHESES expr COMMA expr CLOSE_PARENTHESES
 	| pair_elem
-	| CALL ident OPEN_PARENTHESES (arg_list)? CLOSE PARENTHESES
+	| CALL ident OPEN_PARENTHESES (arg_list)? CLOSE_PARENTHESES
 	;
 	
 arg_list : expr (COMMA expr)* ;
@@ -58,7 +58,7 @@ base_type : INT
 	
 array_type : type OPEN_BRACKET CLOSE_BRACKET ;
 
-pair_type : PAIR OPEN PARENTHESES pair_elem_type COMMA pair_elem_type CLOSE_PARENTHESES ;
+pair_type : PAIR OPEN_PARENTHESES pair_elem_type COMMA pair_elem_type CLOSE_PARENTHESES ;
 
 pair_elem_type : base_type
 	| array_type
@@ -74,7 +74,7 @@ expr : int_liter
 	| array_elem
 	| unary_oper expr
 	| expr binary_oper expr
-	| OPEN_PARENTHESES expr CLOSE PARENTHESES
+	| OPEN_PARENTHESES expr CLOSE_PARENTHESES
 	;
 
 unary_oper : NOT 
@@ -111,11 +111,11 @@ int_sign : POSITIVE | NEGATIVE ;
 
 bool_liter : TRUE | FALSE ;
 
-char_liter : SINGLE_QUOTE character SINGLE_QUOTE
+char_liter : SINGLE_QUOTE character SINGLE_QUOTE ;
 
-str_liter : DOUBLE_QUOTE (character)* DOUBLE_QUOTE
+str_liter : DOUBLE_QUOTE (character)* DOUBLE_QUOTE ;
 
-character :
+character : DOUBLE_QUOTE ;
 
 escaped_char : NUL 
 	| BACKSPACE 
@@ -128,11 +128,11 @@ escaped_char : NUL
 	| BACKSLASH
 	;
 
-array_liter : OPEN_BRACKET (expr (COMMA expr)*)? CLOSE_BRACKET
+array_liter : OPEN_BRACKET (expr (COMMA expr)*)? CLOSE_BRACKET ;
 
 pair_liter : NULL ;
 
-comment : HASH 
+comment : HASH ;
 
 // EOF indicates that the program must consume to the end of the input.
 prog: (expr)*  EOF ;

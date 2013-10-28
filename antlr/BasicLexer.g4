@@ -1,10 +1,13 @@
 lexer grammar BasicLexer;
 
+ASCII: '\3'..'\377' ;
+
 //Statements
+EQUALS: '=' ;
 SKIP: 'skip' ;
 READ: 'read' ;
 FREE: 'free' ;
-RETURN: 'return'
+RETURN: 'return' ;
 EXIT: 'exit' ;
 PRINT: 'print' ;
 PRINTLN: 'println' ;
@@ -18,6 +21,7 @@ DONE: 'done' ;
 BEGIN: 'begin' ;
 END: 'end' ;
 IS: 'is' ;
+SEMICOLON: ';' ;
 
 NEWPAIR: 'newpair' ;
 CALL: 'call' ;
@@ -79,7 +83,7 @@ FORM_FEED: 'f' ;
 CARRIAGE_RETURN: 'r' ;
 DOUBLE_QUOTE: '"' ;
 SINGLE_QUOTE: '`' ;
-BACKSLASH: '\' ;
+BACKSLASH: '\\' ;
 
 //Array Literals
 OPEN_BRACKET: '[' ;
