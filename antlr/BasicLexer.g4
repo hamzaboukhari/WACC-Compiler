@@ -1,7 +1,5 @@
 lexer grammar BasicLexer;
 
-ASCII: '\3'..'\377' ;
-
 //Statements
 EQUALS: '=' ;
 SKIP: 'skip' ;

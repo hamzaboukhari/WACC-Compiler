@@ -32,8 +32,8 @@ assign_lhs : ident
 	| pair_elem
 	;
 	
-assign_rhs : expr ;
-	| array_liter ;
+assign_rhs : expr
+	| array_liter
 	| NEWPAIR OPEN_PARENTHESES expr COMMA expr CLOSE_PARENTHESES
 	| pair_elem
 	| CALL ident OPEN_PARENTHESES (arg_list)? CLOSE_PARENTHESES
@@ -99,13 +99,11 @@ binary_oper : PLUS
 	| OR 
 	;
 
-ident : (UNDERSCORE | LOWERCASE_LETTER | UPPERCASE_LETTER) (UNDERSCORE | LOWERCASE_LETTER | UPPERCASE_LETTER | DIGIT)* ;
+ident : (UNDERSCORE | LOWERCASE_LETTER | UPPERCASE_LETTER) (UNDERSCORE | LOWERCASE_LETTER | UPPERCASE_LETTER | INTEGER)* ;
 
 array_elem : expr OPEN_BRACKET expr CLOSE_BRACKET ;
 
-int_liter : (int_sign)? (digit)+ ;
-
-digit : DIGIT ;
+int_liter : (int_sign)? INTEGER ;
 
 int_sign : POSITIVE | NEGATIVE ;
 
