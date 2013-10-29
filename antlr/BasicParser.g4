@@ -56,7 +56,7 @@ base_type : INT
 	| STRING
 	;
 	
-array_type : type OPEN_BRACKET CLOSE_BRACKET ;
+array_type : (base_type | pair_type) OPEN_BRACKET CLOSE_BRACKET ;
 
 pair_type : PAIR OPEN_PARENTHESES pair_elem_type COMMA pair_elem_type CLOSE_PARENTHESES ;
 
@@ -75,6 +75,17 @@ expr : int_liter
 	| unary_oper expr
 	| expr binary_oper expr
 	| OPEN_PARENTHESES expr CLOSE_PARENTHESES
+	;
+
+expr2 : int_liter
+	| bool_liter
+	| char_liter
+	| str_liter
+	| pair_liter
+	| ident
+	| unary_oper expr2
+	| expr2 binary_oper expr2
+	| OPEN_PARENTHESES expr2 CLOSE_PARENTHESES
 	;
 
 unary_oper : NOT 
@@ -101,7 +112,7 @@ binary_oper : PLUS
 
 ident : (UNDERSCORE | LOWERCASE_LETTER | UPPERCASE_LETTER) (UNDERSCORE | LOWERCASE_LETTER | UPPERCASE_LETTER | INTEGER)* ;
 
-array_elem : expr OPEN_BRACKET expr CLOSE_BRACKET ;
+array_elem : expr2 OPEN_BRACKET expr2 CLOSE_BRACKET ;
 
 int_liter : (int_sign)? INTEGER ;
 
@@ -113,7 +124,8 @@ char_liter : SINGLE_QUOTE character SINGLE_QUOTE ;
 
 str_liter : DOUBLE_QUOTE (character)* DOUBLE_QUOTE ;
 
-character : DOUBLE_QUOTE ;
+character : ~(BACKSLASH | SINGLE_QUOTE | DOUBLE_QUOTE)
+          | '\\' escaped_char ;
 
 escaped_char : NUL 
 	| BACKSPACE 
@@ -130,7 +142,7 @@ array_liter : OPEN_BRACKET (expr (COMMA expr)*)? CLOSE_BRACKET ;
 
 pair_liter : NULL ;
 
-comment : HASH ;
+comment : HASH ~(EOL)* (EOL);
 
 // EOF indicates that the program must consume to the end of the input.
 prog: (expr)*  EOF ;
