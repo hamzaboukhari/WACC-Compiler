@@ -22,11 +22,9 @@ public class Main {
 		BasicParser parser = new BasicParser(tokens);
 		
 		System.out.println(parser.prog().toStringTree(parser));
-		
-		
+		//System.out.println(parser.character().toStringTree(parser));
 		
 		System.out.println("Syntax Errors: "+parser.getNumberOfSyntaxErrors());
-		
 		
 		
 	}

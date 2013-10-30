@@ -91,19 +91,14 @@ COMMA: ',' ;
 //Pair Literal
 NULL: 'null' ;
 
-//Comment
-HASH: '#' ;
-
 OPEN_PARENTHESES: '(' ;
 CLOSE_PARENTHESES: ')' ;
-
 
 fragment DIGIT: '0'..'9' ; 
 
 INTEGER: DIGIT+ ;
 
-EOL: '\n' ;
-
 WHITESPACE : ( '\t' | ' ' | '\r' | '\n' | '\u000C' )+ -> channel(HIDDEN);
-COLON: ':' ;
+
+COMMENT: '#' ~[\r\n]* -> channel(HIDDEN);
 
