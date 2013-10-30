@@ -8,7 +8,7 @@ public class Main {
 	
 	public static void main(String[] args) throws IOException{
 		// Get file name
-		String file = "/Users/mishaal/Imperial/wacc_examples/valid/if/ifBasic.wacc";
+		String file = "/wacc_examples/valid/if/ifBasic.wacc";
 		System.out.println("File: " + file);
 		
 		// Read in file
