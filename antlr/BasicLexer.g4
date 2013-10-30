@@ -80,7 +80,7 @@ NEWLINE: 'n' ;
 FORM_FEED: 'f' ;
 CARRIAGE_RETURN: 'r' ;
 DOUBLE_QUOTE: '"' ;
-SINGLE_QUOTE: '`' ;
+SINGLE_QUOTE: '\'' ;
 BACKSLASH: '\\' ;
 
 //Array Literals
@@ -104,5 +104,6 @@ INTEGER: DIGIT+ ;
 
 EOL: '\n' ;
 
-
+WHITESPACE : ( '\t' | ' ' | '\r' | '\n' | '\u000C' )+ -> channel(HIDDEN);
+COLON: ':' ;
 

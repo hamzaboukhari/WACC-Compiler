@@ -4,7 +4,7 @@ options {
   tokenVocab=BasicLexer;
 }
 
-program : BEGIN (func)* stat END ;
+program : (comment)* BEGIN (comment)* (func)* stat  END (comment)*;
 
 func : type ident OPEN_PARENTHESES (param_list)? CLOSE_PARENTHESES IS stat END ;
  
@@ -25,6 +25,7 @@ stat : SKIP
 	| WHILE expr DO stat DONE
 	| BEGIN stat END
 	| stat SEMICOLON stat
+	| comment
 	;
 	
 assign_lhs : ident
@@ -145,4 +146,4 @@ pair_liter : NULL ;
 comment : HASH ~(EOL)* (EOL);
 
 // EOF indicates that the program must consume to the end of the input.
-prog: (expr)*  EOF ;
+prog: program EOF ;
