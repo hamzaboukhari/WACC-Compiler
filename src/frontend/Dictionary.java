@@ -2,20 +2,21 @@ package frontend;
 
 import java.util.HashMap;
 import java.util.Map;
+import identifier_objects.Identifier;
 
 public class Dictionary {
 	
-	Map<String, Object> dictionary;
+	Map<String, Identifier> dictionary;
 	
 	Dictionary() {
-		dictionary = new HashMap<String, Object>();
+		dictionary = new HashMap<String, Identifier>();
 	}
 	
-	void add(String name, Object obj) {
+	void add(String name, Identifier obj) {
 		dictionary.put(name, obj);
 	}
 	
-	Object get(String name) {
+	Identifier get(String name) {
 		return dictionary.get(name);
 	}
 	

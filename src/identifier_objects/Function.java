@@ -4,8 +4,8 @@ import frontend.SymbolTable;
 
 public class Function extends Identifier {
 	
-	Type returntype;
-	Param formals[];
 	SymbolTable symtab;
+	Type returnType;
+	Variable params[];
 
 }

@@ -8,6 +8,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 
 import antlr.BasicLexer;
 import antlr.BasicParser;
+import antlr.BasicParser.ProgContext;
 
 
 
@@ -32,10 +33,11 @@ public class Main {
 		BasicParser parser = new BasicParser(tokens);
 		
 		// Create AST
-		ParseTree tree = parser.prog();
+		ProgContext tree = parser.prog();
 		
 		//Check Semantics
 		TreeWalker walker = new TreeWalker(tree);
+		walker.validateSemantics();
 		
 		// Debug
 		System.out.println(tree.toStringTree(parser));

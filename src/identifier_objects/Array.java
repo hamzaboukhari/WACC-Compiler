@@ -1,8 +1,7 @@
 package identifier_objects;
 
-public class Array extends Type {
+public class Array extends Variable {
 	
-	Type elementtype;
-	int elements;
+	Variable elements[];
 
 }

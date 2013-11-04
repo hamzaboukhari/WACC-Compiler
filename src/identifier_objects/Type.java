@@ -1,5 +1,5 @@
 package identifier_objects;
 
-public class Type extends Identifier {
-
+public enum Type {
+	INT, BOOL, STRING, CHAR
 }
