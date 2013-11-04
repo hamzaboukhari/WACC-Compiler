@@ -1,5 +1,7 @@
 package frontend;
 
+import identifier_objects.*;
+
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -39,14 +41,28 @@ public class TreeWalker extends BasicParserBaseVisitor<ParseTree>{
 	}
 	
 	@Override public ParseTree visitStat(@NotNull BasicParser.StatContext ctx) {
-		return visitChildren(ctx);
+		if (ctx.getChild(1).getText().equals("EQUALS")) {
+			//found assignment
+		} else if (ctx.getChild(2).getText().equals("EQUALS")) {
+			//found declaration
+			String name = ctx.getChild(1).getText();
+			Type obj = getType(ctx.getChild(0).getText());
+			st.add(name, new Variable(obj));
+		} else {
+			return null;
+		}
 	}
 	
 	@Override public ParseTree visitExpr(@NotNull BasicParser.ExprContext ctx) {
 		
-		return visitChildren(ctx);
+		return null;
 	}
 	
+	@Override public T visitParam(@NotNull BasicParser.ParamContext ctx) { 
+		String name = ctx.getChild(1).getText();
+		Type obj = getType(ctx.getChild(0).getText());
+		st.add(name, new Variable(obj));	
+	}
 	
 
 }
