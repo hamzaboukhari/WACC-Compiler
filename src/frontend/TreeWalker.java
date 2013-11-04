@@ -16,7 +16,7 @@ import antlr.BasicParser.ProgContext;
 import antlr.BasicParser.StatContext;
 import antlr.BasicParserBaseVisitor;
 
-public class TreeWalker extends BasicParserBaseVisitor<ParseTree>{
+public class TreeWalker extends BasicParserBaseVisitor<Type>{
 	
 	private ProgContext tree;
 	private SymbolTable st;
@@ -47,7 +47,7 @@ public class TreeWalker extends BasicParserBaseVisitor<ParseTree>{
 		return BasicLexer.tokenNames[token];
 	}
 	
-	@Override public ParseTree visitProgram(@NotNull BasicParser.ProgramContext ctx) {
+	@Override public Type visitProgram(@NotNull BasicParser.ProgramContext ctx) {
 		st = new SymbolTable(st);
 		
 		visitChildren(ctx);
@@ -57,7 +57,7 @@ public class TreeWalker extends BasicParserBaseVisitor<ParseTree>{
 		return null;
 	}
 	
-	@Override public ParseTree visitFunc(@NotNull BasicParser.FuncContext ctx) {
+	@Override public Type visitFunc(@NotNull BasicParser.FuncContext ctx) {
 		
 		Function func = new Function( getType(ctx.getChild(0).getText()));
 		
@@ -81,7 +81,7 @@ public class TreeWalker extends BasicParserBaseVisitor<ParseTree>{
 		return null;
 	}
 	
-	@Override public ParseTree visitStat(@NotNull BasicParser.StatContext ctx) {
+	@Override public Type visitStat(@NotNull BasicParser.StatContext ctx) {
 		
 		if (ctx.getChild(0).getText() == "while") {
 			st = new SymbolTable(st);
@@ -106,25 +106,26 @@ public class TreeWalker extends BasicParserBaseVisitor<ParseTree>{
 		} else if (ctx.getChild(2).getText().equals("=")) {
 			//found declaration
 			String name = ctx.getChild(1).getText();
-			Type obj = getType(ctx.getChild(0).getText());
-			st.add(name, new Variable(obj));
+			Type type = getType(ctx.getChild(0).getText());
+			st.add(name, new Variable(type));
+			return type;
 		}
 		
 		return null;
 		
 	}
 	
-	@Override public ParseTree visitExpr(@NotNull BasicParser.ExprContext ctx) {
+	@Override public Type visitExpr(@NotNull BasicParser.ExprContext ctx) {
 		
 		return null;
 	}
 	
-	@Override public ParseTree visitParam(@NotNull BasicParser.ParamContext ctx) { 
+	@Override public Type visitParam(@NotNull BasicParser.ParamContext ctx) { 
 		String name = ctx.getChild(1).getText();
-		Type obj = getType(ctx.getChild(0).getText());
-		st.add(name, new Variable(obj));
+		Type type = getType(ctx.getChild(0).getText());
+		st.add(name, new Variable(type));
 		
-		return null;
+		return type;
 	}
 	
 
