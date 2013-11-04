@@ -25,13 +25,6 @@ public interface BasicParserVisitor<T> extends ParseTreeVisitor<T> {
 	T visitParam(@NotNull BasicParser.ParamContext ctx);
 
 	/**
-	 * Visit a parse tree produced by {@link BasicParser#expr2}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExpr2(@NotNull BasicParser.Expr2Context ctx);
-
-	/**
 	 * Visit a parse tree produced by {@link BasicParser#expr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -95,13 +88,6 @@ public interface BasicParserVisitor<T> extends ParseTreeVisitor<T> {
 	T visitPair_elem(@NotNull BasicParser.Pair_elemContext ctx);
 
 	/**
-	 * Visit a parse tree produced by {@link BasicParser#escaped_char}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitEscaped_char(@NotNull BasicParser.Escaped_charContext ctx);
-
-	/**
 	 * Visit a parse tree produced by {@link BasicParser#base_type}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -163,13 +149,6 @@ public interface BasicParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitArg_list(@NotNull BasicParser.Arg_listContext ctx);
-
-	/**
-	 * Visit a parse tree produced by {@link BasicParser#array_elem}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitArray_elem(@NotNull BasicParser.Array_elemContext ctx);
 
 	/**
 	 * Visit a parse tree produced by {@link BasicParser#program}.

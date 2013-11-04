@@ -8,7 +8,7 @@ public class Main {
 	
 	public static void main(String[] args) throws IOException{
 		// Get file name
-		String file = "/wacc_examples/valid/if/ifBasic.wacc";
+		String file = "/Users/mishaal/Imperial/wacc_examples/valid/advanced/fibonacciRecursive.wacc";
 		System.out.println("File: " + file);
 		
 		// Read in file

@@ -28,7 +28,7 @@ stat : SKIP
 	;
 	
 assign_lhs : ident
-	| array_elem
+	| expr OPEN_BRACKET expr CLOSE_BRACKET
 	| pair_elem
 	;
 	
@@ -71,25 +71,14 @@ expr : int_liter
 	| str_liter
 	| pair_liter
 	| ident
-	| array_elem
+	| expr OPEN_BRACKET expr CLOSE_BRACKET
 	| unary_oper expr
 	| expr binary_oper expr
 	| OPEN_PARENTHESES expr CLOSE_PARENTHESES
 	;
 
-expr2 : int_liter
-	| bool_liter
-	| char_liter
-	| str_liter
-	| pair_liter
-	| ident
-	| unary_oper expr2
-	| expr2 binary_oper expr2
-	| OPEN_PARENTHESES expr2 CLOSE_PARENTHESES
-	;
-
 unary_oper : NOT 
-	| NEGATE 
+	| MINUS 
 	| LENGTH
 	| ORD 
 	| TO_INT 
@@ -109,14 +98,12 @@ binary_oper : PLUS
 	| AND 
 	| OR 
 	;
-
-ident : (UNDERSCORE | LOWERCASE_LETTER | UPPERCASE_LETTER) (UNDERSCORE | LOWERCASE_LETTER | UPPERCASE_LETTER | INTEGER)* ;
-
-array_elem : expr2 OPEN_BRACKET expr2 CLOSE_BRACKET ;
+	
+ident : IDENT ;
 
 int_liter : (int_sign)? INTEGER ;
 
-int_sign : POSITIVE | NEGATIVE ;
+int_sign : PLUS | MINUS ;
 
 bool_liter : TRUE | FALSE ;
 
@@ -125,18 +112,7 @@ char_liter : SINGLE_QUOTE character SINGLE_QUOTE ;
 str_liter : DOUBLE_QUOTE (character)* DOUBLE_QUOTE ;
 
 character : ~(BACKSLASH | SINGLE_QUOTE | DOUBLE_QUOTE)
-          | BACKSLASH escaped_char ;
-
-escaped_char : NUL 
-	| BACKSPACE 
-	| TAB 
-	| NEWLINE 
-	| FORM_FEED 
-	| CARRIAGE_RETURN 
-	| SINGLE_QUOTE 
-	| DOUBLE_QUOTE 
-	| BACKSLASH
-	;
+          |  ESCAPED_CHAR ;
 
 array_liter : OPEN_BRACKET (expr (COMMA expr)*)? CLOSE_BRACKET ;
 

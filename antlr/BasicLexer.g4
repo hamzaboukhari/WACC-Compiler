@@ -39,7 +39,6 @@ PAIR: 'pair' ;
 
 //Unary Operators
 NOT: '!' ;
-NEGATE: '-' ;
 LENGTH: 'len' ;
 ORD: 'ord' ;
 TO_INT: 'toInt' ;
@@ -61,27 +60,23 @@ OR: '||' ;
 
 //Identifiers
 UNDERSCORE: '_' ;
-LOWERCASE_LETTER: 'a'..'z' ;
-UPPERCASE_LETTER: 'A'..'Z' ;
-
-//Integer Signs
-NEGATIVE: '-' ;
-POSITIVE: '+' ;
 
 //Boolean Literals
 TRUE: 'true' ;
 FALSE: 'false' ;
 
 //Escaped Chars
-NUL: '0' ;
-BACKSPACE: 'b' ;
-TAB: 't' ;
-NEWLINE: 'n' ;
-FORM_FEED: 'f' ;
-CARRIAGE_RETURN: 'r' ;
+fragment NUL: '0' ;
+fragment BACKSPACE: 'b' ;
+fragment TAB: 't' ;
+fragment FORM_FEED: 'f' ;
+fragment NEWLINE: 'n' ;
+fragment CARRIAGE_RETURN: 'r' ;
 DOUBLE_QUOTE: '"' ;
 SINGLE_QUOTE: '\'' ;
 BACKSLASH: '\\' ;
+
+ESCAPED_CHAR : BACKSLASH (NUL | BACKSPACE | TAB | FORM_FEED | CARRIAGE_RETURN | SINGLE_QUOTE | DOUBLE_QUOTE | BACKSLASH ) ;
 
 //Array Literals
 OPEN_BRACKET: '[' ;
@@ -95,10 +90,14 @@ OPEN_PARENTHESES: '(' ;
 CLOSE_PARENTHESES: ')' ;
 
 fragment DIGIT: '0'..'9' ; 
-
+fragment LOWERCASE: ( 'a'..'z' ) ;
+fragment UPPERCASE: ( 'A'..'Z' ) ;
 INTEGER: DIGIT+ ;
 
-WHITESPACE : ( '\t' | ' ' | '\r' | '\n' | '\u000C' )+ -> channel(HIDDEN);
+IDENT: ( UNDERSCORE | LOWERCASE | UPPERCASE ) ( UNDERSCORE | LOWERCASE | UPPERCASE | DIGIT )* ;
 
-COMMENT: '#' ~[\r\n]* -> channel(HIDDEN);
+WHITESPACE : ( '\t' | ' ' | '\r' | '\n' )+ -> skip;
 
+COMMENT: '#' ~[\r\n]* -> skip;
+
+EVERYTHING: ~( '\n' | '\r' ) ;
