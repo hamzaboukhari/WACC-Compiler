@@ -1,5 +1,9 @@
 parser grammar BasicParser;
 
+@header{
+package antlr;
+}
+
 options {
   tokenVocab=BasicLexer;
 }

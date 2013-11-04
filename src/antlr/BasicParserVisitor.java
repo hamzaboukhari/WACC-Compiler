@@ -1,4 +1,7 @@
 // Generated from ./BasicParser.g4 by ANTLR 4.1
+
+package antlr;
+
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 

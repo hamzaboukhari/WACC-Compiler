@@ -1,5 +1,9 @@
 lexer grammar BasicLexer;
 
+@header{
+package antlr;
+}
+
 //Statements
 EQUALS: '=' ;
 SKIP: 'skip' ;

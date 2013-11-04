@@ -1,6 +1,6 @@
 WHILE=13
-MOD=35
 DOUBLE_QUOTE=49
+MOD=35
 CHAR=26
 DO=14
 EVERYTHING=63
@@ -84,8 +84,8 @@ BACKSLASH=51
 'int'=24
 'if'=9
 '('=57
-'exit'=6
 'while'=13
+'exit'=6
 '-'=37
 ','=55
 ']'=54
@@ -107,8 +107,8 @@ BACKSLASH=51
 '%'=35
 'do'=14
 'char'=26
-'fst'=22
 '"'=49
+'fst'=22
 '<='=41
 '!='=43
 'false'=48
