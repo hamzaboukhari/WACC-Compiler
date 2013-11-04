@@ -9,7 +9,9 @@ import org.antlr.v4.runtime.tree.RuleNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import antlr.BasicParser;
+import antlr.BasicParser.ExprContext;
 import antlr.BasicParser.ProgContext;
+import antlr.BasicParser.StatContext;
 import antlr.BasicParserBaseVisitor;
 
 public class TreeWalker extends BasicParserBaseVisitor<ParseTree>{
@@ -41,9 +43,28 @@ public class TreeWalker extends BasicParserBaseVisitor<ParseTree>{
 	}
 	
 	@Override public ParseTree visitStat(@NotNull BasicParser.StatContext ctx) {
-		if (ctx.getChild(1).getText().equals("EQUALS")) {
+		
+		if (ctx.getChild(0).getText() == "while") {
+			st = new SymbolTable(st);
+			
+			visitExpr((ExprContext) ctx.getChild(1));
+			
+			visitStat((StatContext) ctx.getChild(3));
+			
+			st = st.getParent();
+		} else if (ctx.getChild(0).getText() == "if") {
+			st = new SymbolTable(st);
+			
+			visitExpr((ExprContext) ctx.getChild(1));
+			
+			visitStat((StatContext) ctx.getChild(3));
+			
+			visitStat((StatContext) ctx.getChild(5));
+			
+			st = st.getParent();
+		} else if (ctx.getChild(1).getText().equals("=")) {
 			//found assignment
-		} else if (ctx.getChild(2).getText().equals("EQUALS")) {
+		} else if (ctx.getChild(2).getText().equals("=")) {
 			//found declaration
 			String name = ctx.getChild(1).getText();
 			Type obj = getType(ctx.getChild(0).getText());
@@ -51,6 +72,7 @@ public class TreeWalker extends BasicParserBaseVisitor<ParseTree>{
 		} else {
 			return null;
 		}
+		
 	}
 	
 	@Override public ParseTree visitExpr(@NotNull BasicParser.ExprContext ctx) {
