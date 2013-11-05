@@ -169,7 +169,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			}
 		
 			typeMatch(type, visitAssign_rhs((Assign_rhsContext) ctx.getChild(2)));
-		} else if (ctx.getChild(2).getText().equals("=")) {
+		} else if (ctx.getChildCount() > 2 && ctx.getChild(2).getText().equals("=")) {
 			//found declaration
 			String name = ctx.getChild(1).getText();
 			
