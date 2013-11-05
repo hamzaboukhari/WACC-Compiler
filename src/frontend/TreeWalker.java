@@ -10,6 +10,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import antlr.BasicLexer;
 import antlr.BasicParser;
+import antlr.BasicParser.Assign_rhsContext;
 import antlr.BasicParser.ExprContext;
 import antlr.BasicParser.Param_listContext;
 import antlr.BasicParser.ProgContext;
@@ -20,6 +21,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 	
 	private ProgContext tree;
 	private SymbolTable st;
+	private int errorCount;
 
 	public TreeWalker(ProgContext t){
 		tree = t;
@@ -28,6 +30,22 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 	
 	public void validateSemantics(){
 		visitProg(tree);
+	}
+	
+	private void typeMatch(Type t1, Type t2){
+		if(t1 != t2){
+			//Semantic Error: Types do not match
+			System.err.println("Type Error");
+			errorCount++;
+		}
+	}
+	
+	private void checkDec(String varName){
+		if(st.lookUpCurrLevelAndEnclosingLevels(varName) == null){
+			//Semantic Error: Variable not declared
+			System.err.println("Variable " + varName + " not declared");
+			errorCount++;
+		}
 	}
 	
 	private Type getType(String type){
@@ -103,20 +121,29 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			st = st.getParent();
 		} else if (ctx.getChild(1).getText().equals("=")) {
 			//found assignment
+			//First check variable is declared
+			String varName = ctx.getChild(0).getText();
+			checkDec(varName);
+			typeMatch(((Variable) st.lookUpCurrLevelAndEnclosingLevels(varName)).getType(),visitAssign_rhs((Assign_rhsContext) ctx.getChild(3)));
 		} else if (ctx.getChild(2).getText().equals("=")) {
 			//found declaration
 			String name = ctx.getChild(1).getText();
 			Type type = getType(ctx.getChild(0).getText());
 			st.add(name, new Variable(type));
-			return type;
+			typeMatch(type,visitAssign_rhs((Assign_rhsContext) ctx.getChild(3)));
 		}
 		
 		return null;
 		
 	}
 	
+	@Override public Type visitAssign_rhs(@NotNull BasicParser.Assign_rhsContext ctx) {
+		System.out.println("ARHS"+ctx.getChild(0));
+		return null;
+	}
+	
 	@Override public Type visitExpr(@NotNull BasicParser.ExprContext ctx) {
-		
+		//System.out.println(ctx.getText());
 		return null;
 	}
 	

@@ -17,7 +17,7 @@ public class Main {
 	public static void main(String[] args) throws IOException{
 		// Get file name
 		//String file = args[0];
-		String file = "/homes/hj512/wacc_examples/valid/advanced/fibonacciFullRec.wacc";
+		String file = "/homes/hj512/wacc_examples/invalid/semanticErr/declaration/basicTypeErr01.wacc";
 		System.out.println("File: " + file);
 		
 		// Read in file
