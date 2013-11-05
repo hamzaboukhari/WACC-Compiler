@@ -104,7 +104,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 		return null;
 	}
 	
-	@Override public Type visitStat(@NotNull BasicParser.StatContext ctx) {
+@Override public Type visitStat(@NotNull BasicParser.StatContext ctx) {
 		
 		if (ctx.getChild(0).getText() == "while") {
 			st = new SymbolTable(st);
@@ -129,30 +129,42 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			//First check variable is declared
 			String varName = ctx.getChild(0).getText();
 			checkDec(varName);
-			typeMatch(((Variable) st.lookUpCurrLevelAndEnclosingLevels(varName)).getType(),visitAssign_rhs((Assign_rhsContext) ctx.getChild(3)));
+			typeMatch(((Variable) st.lookUpCurrLevelAndEnclosingLevels(varName)).getType(), visitAssign_rhs((Assign_rhsContext) ctx.getChild(3)));
 		} else if (ctx.getChild(2).getText().equals("=")) {
 			//found declaration
 			String name = ctx.getChild(1).getText();
 			Type type = getType(ctx.getChild(0).getText());
-			st.add(name, new Variable(type));
-			typeMatch(type,visitAssign_rhs((Assign_rhsContext) ctx.getChild(3)));
+			ParseTree rhs = ctx.getChild(3);
+			if (type == Type.PAIR) {
+				Type fst = getType(rhs.getChild(2).getText());
+				Type snd = getType(rhs.getChild(4).getText());
+				st.add(name, new Pair(fst, snd));
+			} else if (rhs.getChild(0).getText() == "["){
+				Array arr = new Array(type);
+				for (int i = 1, j = 0 ; i < rhs.getChild(0).getChildCount() - 1 ; i += 2, j++) {
+					Type[] elems = arr.getElems();
+					elems[j] = getType(rhs.getChild(0).getChild(i).getText());
+				}
+				st.add(name, arr);
+			} else {
+				st.add(name, new Variable(type));
+			}
+			typeMatch(type, visitAssign_rhs((Assign_rhsContext) rhs));
 		}
-		
-		return null;
-		
+		return null;		
 	}
 	
 	@Override public Type visitAssign_rhs(@NotNull BasicParser.Assign_rhsContext ctx) {
-		String s = ctx.getChild(0).getText();
-		if (s == "newpair") {
+		ParseTree child = ctx.getChild(0);
+		if (child.getText() == "newpair") {
 			//Found newpair
 			visitExpr((ExprContext) ctx.getChild(2));
 			visitExpr((ExprContext) ctx.getChild(4));
 			return Type.PAIR;
-		} else if (s == "[") {
+		} else if (child.getChild(0).getText() == "[") {
 			//Found array_liter
 			if (ctx.getChildCount() == 2) {
-				return null;
+				return Type.ANY;
 			} else if (ctx.getChildCount() == 3) {
 				return visitExpr((ExprContext) ctx.getChild(1));
 			} else {
@@ -165,32 +177,27 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 				}
 				return currType;
 			}
-		} else if (s == "fst" || s == "snd") {
+		} else if (child.getChild(0).getText() == "fst" || child.getChild(0).getText() == "snd") {
 			//Found pair_elem
 			visitExpr((ExprContext) ctx.getChild(1));
 			return Type.PAIR;
-		} else if (s == "call"){
+		} else if (child.getText() == "call"){
 			//Found call
 			String func = ctx.getChild(1).getText();
 			Function f = (Function) st.lookUpCurrLevelAndEnclosingLevels(func);
-			if (ctx.getChildCount() > 4 && f.getParams().length > 0) {
-			//Check same num params
-				if (f.getParams().length != ctx.getChild(3).getChildCount()) {
-					System.err.println("Incorrect number of parameters in call");
-		            return null;
-				}
-				Type[] params = f.getParams();
-				for (int i = 0, j = 0 ; i < ctx.getChild(3).getChildCount() && j < params.length ; i += 2, j++) {
-					Type currType = visitExpr((ExprContext) ctx.getChild(i));
-					typeMatch(currType, params[j]);
-				}
-				return f.getReturnType();
-			} else {
-				//No params
+			if (f.getParams().length != ctx.getChild(3).getChildCount()) {
+				System.err.println("Incorrect number of parameters in call");
+	            return null;
 			}
+			Type[] params = f.getParams();
+			for (int i = 0, j = 0 ; i < ctx.getChild(3).getChildCount() && j < params.length ; i += 2, j++) {
+				Type currType = visitExpr((ExprContext) ctx.getChild(i));
+				typeMatch(currType, params[j]);
+			}
+			return f.getReturnType();
 		} else {
 			//Found expr
-			visitExpr((ExprContext) ctx.getChild(0));
+			visitExpr((ExprContext) child);
 		}
 		return null;
 	}
