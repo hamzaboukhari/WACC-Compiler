@@ -16,7 +16,7 @@ public class Main {
 		// Get file name
 		String file = args[0];
 		//String file = "../wacc_examples/valid/function/functionManyArguments.wacc";
-		System.out.println("File: " + file);
+		//System.out.println("File: " + file);
 		
 		// Read in file
 		CharStream cs = new ANTLRFileStream(file);
@@ -34,7 +34,7 @@ public class Main {
 		ProgContext tree = parser.prog();
 		
 		// Debug
-		System.out.println(tree.toStringTree(parser));
+		//System.out.println(tree.toStringTree(parser));
 		
 		if(parser.getNumberOfSyntaxErrors() == 0){
 			//Check Semantics
