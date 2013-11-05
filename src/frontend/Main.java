@@ -15,7 +15,7 @@ public class Main {
 	public static void main(String[] args) throws IOException{
 		// Get file name
 		//String file = args[0];
-		String file = "../wacc_examples/invalid/semanticErr/declaration/doubleDeclare.wacc";
+		String file = "../wacc_examples/valid/function/functionManyArguments.wacc";
 		System.out.println("File: " + file);
 		
 		// Read in file
@@ -33,13 +33,16 @@ public class Main {
 		// Create AST
 		ProgContext tree = parser.prog();
 		
-		//Check Semantics
-		TreeWalker walker = new TreeWalker(tree);
-		walker.validateSemantics();
-		
 		// Debug
 		System.out.println(tree.toStringTree(parser));
-		System.out.println("Syntax Errors: " + parser.getNumberOfSyntaxErrors());
+		
+		if(parser.getNumberOfSyntaxErrors() == 0){
+			//Check Semantics
+			TreeWalker walker = new TreeWalker(tree);
+			walker.validateSemantics();
+		} else {
+			System.out.println("Syntax Errors: " + parser.getNumberOfSyntaxErrors());
+		}
 	}
 	
 }

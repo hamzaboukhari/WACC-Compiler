@@ -46,6 +46,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 	}
 
 	private boolean typeMatch(Type t1, Type t2){
+		//System.out.println(t1 + "==" + t2);
 		if(t1 == Type.ANY || t2 == Type.ANY){
 			return true;
 		}
@@ -115,7 +116,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 	@Override public Type visitParam(@NotNull BasicParser.ParamContext ctx) {
 
 		Type type = getType(ctx.getChild(0).getText());
-		((Function) st.lookupCurrLevelOnly(currFunc)).addParam(type);
+		((Function) getIdent(currFunc)).addParam(type);
 
 		String name = ctx.getChild(1).getText();
 		st.add(name, new Variable(type));
@@ -131,7 +132,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 		}
 		
 		if (ctx.getChild(0).getText().equals("return")){
-			if(currFunc != ""){
+			if(currFunc == ""){
 				System.err.println("Return out of bounds");
 			}
 		} else if (ctx.getChild(0).getText().equals("while")) {
@@ -145,7 +146,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			visitStat((StatContext) ctx.getChild(3));
 			visitStat((StatContext) ctx.getChild(5));
 			st = st.getParent();
-		} else if (ctx.getChild(1).getText().equals("=")) {
+		} else if (ctx.getChildCount() > 1 && ctx.getChild(1).getText().equals("=")) {
 			//found assignment
 			ParseTree curr = ctx.getChild(0).getChild(0);//Curr = LHS first Child
 			if(curr instanceof BasicParser.Pair_elemContext){
@@ -195,19 +196,25 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			}
 			typeMatch(type, visitAssign_rhs((Assign_rhsContext) rhs));
 		} else if (ctx.getChild(0).getText().equals("print") || ctx.getChild(0).getText().equals("println")) {
-			return visitExpr((ExprContext) ctx.getChild(1));
+			visitExpr((ExprContext) ctx.getChild(1));
+		}
+		else if (ctx.getChild(0).getText().equals("exit")) {
+			if (!(visitExpr((ExprContext) ctx.getChild(1)) == Type.INT)) {
+				System.err.println("Exit code must be an integer");
+			}
 		}
 		return null;		
 	}
 	
 	@Override public Type visitAssign_rhs(@NotNull BasicParser.Assign_rhsContext ctx) {
 		ParseTree child = ctx.getChild(0);
-		if (child.getText() == "newpair") {
+		//System.out.println(ctx.getText());
+		if (child.getText().equals("newpair")) {
 			//Found newpair
 			visitExpr((ExprContext) ctx.getChild(2));
 			visitExpr((ExprContext) ctx.getChild(4));
 			return Type.PAIR;
-		} else if (child.getChild(0).getText() == "[") {
+		} else if (child.getChildCount() > 0 && child.getChild(0).getText().equals("[")) {
 			//Found array_liter
 			if (ctx.getChildCount() == 2) {
 				return Type.ANY;
@@ -223,28 +230,33 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 				}
 				return currType;
 			}
-		} else if (child.getChild(0).getText() == "fst" || child.getChild(0).getText() == "snd") {
+		} else if (child.getChildCount() > 0 && (child.getChild(0).getText().equals("fst") || child.getChild(0).getText().equals("snd"))) {
 			//Found pair_elem
 			visitExpr((ExprContext) ctx.getChild(1));
 			return Type.PAIR;
-		} else if (child.getText() == "call"){
+		} else if (child.getText().equals("call")){
 			//Found call
 			String func = ctx.getChild(1).getText();
 			Function f = (Function) getIdent(func);
-			if (f.getParams().length != ctx.getChild(3).getChildCount()) {
-				System.err.println("Incorrect number of parameters in call");
+			if (f.getParams().length != ctx.getChild(3).getChildCount() - 5) {
+				System.err.println("Incorrect number of parameters in call, need " + f.getParams().length + " has " + (ctx.getChild(3).getChildCount() - 5));
 	            return null;
 			}
 			Type[] params = f.getParams();
-			for (int i = 0, j = 0 ; i < ctx.getChild(3).getChildCount() && j < params.length ; i += 2, j++) {
-				Type currType = visitExpr((ExprContext) ctx.getChild(i));
+			
+			int i = 0;
+			//System.out.println("call:"+ctx.getText());
+			for (int j = 0 ; j < f.getParams().length && j < params.length ; j++) {
+				Type currType = visitExpr((ExprContext) ctx.getChild(3).getChild(i));
 				typeMatch(currType, params[j]);
+				i += 2;
 			}
 			return f.getReturnType();
-		} else {
+		} else if(child instanceof BasicParser.ExprContext){
 			//Found expr
 			return visitExpr((ExprContext) child);
 		}
+		return null;
 	}
 
 	@Override public Type visitExpr(@NotNull BasicParser.ExprContext ctx) {
@@ -276,7 +288,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 		if (ctx.getChild(0) instanceof BasicParser.Unary_operContext) {			
 			String token = token(ctx.getChild(0).getText());
 			
-			if (token == getToken(BasicLexer.NOT)) {
+			if (token.equals(getToken(BasicLexer.NOT))) {
 				if (visitExpr((ExprContext) ctx.getChild(1)) != Type.BOOL) {
 					System.err.println("Type mismatch, must be of type bool");
 					return null;
@@ -284,7 +296,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 					return Type.BOOL;
 				}
 			}
-			else if (token == getToken(BasicLexer.MINUS)) {
+			else if (token.equals(getToken(BasicLexer.MINUS))) {
 				if (visitExpr((ExprContext) ctx.getChild(1)) != Type.INT) {
 					System.err.println("Type mismatch, must be of type int");
 					return null;
@@ -292,12 +304,12 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 					return Type.INT;
 				}
 			}
-			else if (token == getToken(BasicLexer.LENGTH)) {
+			else if (token.equals(getToken(BasicLexer.LENGTH))) {
 				if (checkArray(ctx.getChild(1).getText())) {
 					return Type.INT;
 				}
 			}
-			else if (token == getToken(BasicLexer.ORD)) {
+			else if (token.equals(getToken(BasicLexer.ORD))) {
 				if (visitExpr((ExprContext) ctx.getChild(1)) != Type.INT) {
 					System.err.println("Type mismatch, must be of type int");
 					return null;
@@ -305,7 +317,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 					return Type.CHAR;
 				}
 			}
-			else if (token == getToken(BasicLexer.TO_INT)) {
+			else if (token.equals(getToken(BasicLexer.TO_INT))) {
 				if (visitExpr((ExprContext) ctx.getChild(1)) != Type.CHAR) {
 					System.err.println("Type mismatch, must be of type char");
 					return null;
@@ -314,7 +326,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 				}
 			}
 		}
-		else if (token(ctx.getChild(0).getText()) == getToken(BasicLexer.OPEN_PARENTHESES)) {
+		else if (token(ctx.getChild(0).getText()).equals(getToken(BasicLexer.OPEN_PARENTHESES))) {
 			return visitExpr((ExprContext) ctx.getChild(1));
 		}
 
@@ -334,7 +346,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 
 		}
 
-		if(token(ctx.getChild(1).getText()) == getToken(BasicLexer.OPEN_BRACKET)){
+		if(token(ctx.getChild(1).getText()).equals(getToken(BasicLexer.OPEN_BRACKET))){
 			//Check Array Pointer is an Integer
 			typeMatch(Type.INT,visitExpr((ExprContext) ctx.getChild(2)));
 			//Check first Expr, if an ident, is an Array
@@ -362,26 +374,26 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 
 		String token = token(ctx.getText());
 		
-		if (token == getToken(BasicLexer.PLUS)
-				|| token == getToken(BasicLexer.MINUS)
-				|| token == getToken(BasicLexer.MULTIPLY)
-				|| token == getToken(BasicLexer.DIVIDE)
-				|| token == getToken(BasicLexer.MOD)
-				|| token == getToken(BasicLexer.GREATER)
-				|| token == getToken(BasicLexer.GREATER_EQUAL)
-				|| token == getToken(BasicLexer.LESS)
-				|| token == getToken(BasicLexer.LESS_EQUAL)){
+		if (token.equals(getToken(BasicLexer.PLUS))
+				|| token.equals(getToken(BasicLexer.MINUS))
+				|| token.equals(getToken(BasicLexer.MULTIPLY))
+				|| token.equals(getToken(BasicLexer.DIVIDE))
+				|| token.equals(getToken(BasicLexer.MOD))
+				|| token.equals(getToken(BasicLexer.GREATER))
+				|| token.equals(getToken(BasicLexer.GREATER_EQUAL))
+				|| token.equals(getToken(BasicLexer.LESS))
+				|| token.equals(getToken(BasicLexer.LESS_EQUAL))){
 			return Type.INT;
 
 		}
 
-		if(token == getToken(BasicLexer.EQUAL)
-				|| token == getToken(BasicLexer.NOT_EQUAL)){
+		if(token.equals(getToken(BasicLexer.EQUAL))
+				|| token.equals(getToken(BasicLexer.NOT_EQUAL))){
 			return Type.ANY;
 		}
 
-		if(token == getToken(BasicLexer.AND)
-				|| token == getToken(BasicLexer.OR)){
+		if(token.equals(getToken(BasicLexer.AND))
+				|| token.equals(getToken(BasicLexer.OR))){
 			return Type.BOOL;
 		}
 
