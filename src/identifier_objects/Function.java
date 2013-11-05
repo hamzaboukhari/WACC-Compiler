@@ -16,6 +16,10 @@ public class Function extends Identifier {
 		symtab = st;
 	}
 	
+	public void addParam(Type t) {
+		params[params.length] = t;
+	}
+	
 	public Type[] getParams() {
 		return params;
 	}
