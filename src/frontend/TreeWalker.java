@@ -195,7 +195,8 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 		return null;
 	}
 	
-	@Override public Type visitExpr(@NotNull BasicParser.ExprContext ctx) {
+	@Override
+	public Type visitExpr(@NotNull BasicParser.ExprContext ctx) {
 		if(ctx.getChild(0) instanceof BasicParser.Int_literContext){
 			return Type.INT;
 		}
@@ -215,6 +216,55 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			return ((Variable) st.lookUpCurrLevelAndEnclosingLevels(ctx.getText())).getType();
 		}
 		
+		if (ctx.getChild(0) instanceof BasicParser.Unary_operContext) {			
+			String token = ctx.getChild(0).getText();
+			
+			if (token == getToken(BasicLexer.NOT)) {
+				if (visitExpr((ExprContext) ctx.getChild(1)) != Type.BOOL) {
+					System.err.println("Type mismatch, must be of type bool");
+					errorCount++;
+					return null;
+				} else {
+					return Type.BOOL;
+				}
+			}
+			else if (token == getToken(BasicLexer.MINUS)) {
+				if (visitExpr((ExprContext) ctx.getChild(1)) != Type.INT) {
+					System.err.println("Type mismatch, must be of type int");
+					errorCount++;
+					return null;
+				} else {
+					return Type.INT;
+				}
+			}
+			else if (token == getToken(BasicLexer.LENGTH)) {
+				if (checkArray(ctx.getChild(1).getText())) {
+					return Type.INT;
+				}
+			}
+			else if (token == getToken(BasicLexer.ORD)) {
+				if (visitExpr((ExprContext) ctx.getChild(1)) != Type.INT) {
+					System.err.println("Type mismatch, must be of type int");
+					errorCount++;
+					return null;
+				} else {
+					return Type.CHAR;
+				}
+			}
+			else if (token == getToken(BasicLexer.TO_INT)) {
+				if (visitExpr((ExprContext) ctx.getChild(1)) != Type.CHAR) {
+					System.err.println("Type mismatch, must be of type char");
+					errorCount++;
+					return null;
+				} else {
+					return Type.INT;
+				}
+			}
+		}
+		else if (ctx.getChild(0).getText() == getToken(BasicLexer.OPEN_PARENTHESES)) {
+			return visitExpr((ExprContext) ctx.getChild(1));
+		}
+		
 		if(ctx.getChild(1) instanceof BasicParser.Binary_operContext){
 			//Check expr1 type = expr2 type
 			Type e1 = visitExpr((ExprContext) ctx.getChild(0));
@@ -229,7 +279,26 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 		return null;
 	}
 	
-	@Override public Type visitParam(@NotNull BasicParser.ParamContext ctx) { 
+	public boolean checkArray(String ident) {
+		if (st.lookUpCurrLevelAndEnclosingLevels(ident) instanceof identifier_objects.Array) {
+			return true;
+		} else {
+			System.err.println("Type mismatch, must be an array");
+			errorCount++;
+			return false;
+		}
+	}
+	
+	@Override
+	public Type visitUnary_oper(BasicParser.Unary_operContext ctx) {
+				
+		
+		return null;
+	}
+	
+	
+	@Override
+	public Type visitParam(@NotNull BasicParser.ParamContext ctx) { 
 		String name = ctx.getChild(1).getText();
 		Type type = getType(ctx.getChild(0).getText());
 		st.add(name, new Variable(type));
