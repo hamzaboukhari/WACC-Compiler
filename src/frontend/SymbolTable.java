@@ -29,7 +29,6 @@ public class SymbolTable {
 			}
 			S = S.encSymTable;
 		}
-		System.err.println("Variable " + name + " not declared");
 		return null;
 	}
 	

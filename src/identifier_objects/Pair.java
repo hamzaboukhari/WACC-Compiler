@@ -10,4 +10,12 @@ public class Pair extends Variable {
 		fst = this.fst;
 		snd = this.snd;
 	}
+	
+	public Type getF(){
+		return fst;
+	}
+	
+	public Type getS(){
+		return snd;
+	}
 }

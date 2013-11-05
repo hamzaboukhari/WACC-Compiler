@@ -35,9 +35,17 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 	public void validateSemantics(){
 		visitProg(tree);
 	}
+	
+	private Identifier getIdent(String identName){
+		Identifier ident = st.lookUpCurrLevelAndEnclosingLevels(identName);
+		if(ident == null){
+			System.err.println("Identifier Not Declared");
+		    return new Variable(Type.ANY);
+		}
+		return ident;
+	}
 
 	private boolean typeMatch(Type t1, Type t2){
-
 		if(t1 == Type.ANY || t2 == Type.ANY){
 			return true;
 		}
@@ -51,42 +59,43 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 	}
 
 	private Type getType(String type){
-		if(type == getToken(BasicLexer.INT)){
+		if(token(type).equals(getToken(BasicLexer.INT))){
 			return Type.INT;
-		} if(type == getToken(BasicLexer.BOOL)){
+		} if(token(type).equals(getToken(BasicLexer.BOOL))){
 			return Type.BOOL;
-		} if(type == getToken(BasicLexer.CHAR)){
+		} if(token(type).equals(getToken(BasicLexer.CHAR))){
 			return Type.CHAR;
-		} if(type == getToken(BasicLexer.STRING)){
+		} if(token(type).equals(getToken(BasicLexer.STRING))){
 			return Type.STRING;
 		} 
 
 		return null;
 	}
 
+	private String token(String str){
+		return "'"+str+"'";
+	}
+	
 	private String getToken(int token){
 		return BasicLexer.tokenNames[token];
 	}
 
 	@Override public Type visitProgram(@NotNull BasicParser.ProgramContext ctx) {
 		st = new SymbolTable(st);
-
 		visitChildren(ctx);
-
 		st = st.getParent();
-
 		return null;
 	}
 
 	@Override public Type visitFunc(@NotNull BasicParser.FuncContext ctx) {
 
-		Function func = new Function( getType(ctx.getChild(0).getText()));
+		Function func = new Function(getType(ctx.getChild(0).getText()));
 		currFunc = ctx.getChild(1).getText();
 		st.add(currFunc,func);
 
 		st = new SymbolTable(st);
 		int funcBody = 5;
-
+		
 		if(ctx.getChildCount() == 8){
 			//Has Parameters
 			visitParam_list((Param_listContext) ctx.getChild(3));
@@ -117,16 +126,20 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 
 	@Override public Type visitStat(@NotNull BasicParser.StatContext ctx) {
 		
-		if (ctx.getChild(0).getText() == "return"){
+		if(ctx.getChild(0) instanceof BasicParser.StatContext){
+			return visitChildren(ctx);
+		}
+		
+		if (ctx.getChild(0).getText().equals("return")){
 			if(currFunc != ""){
 				System.err.println("Return out of bounds");
 			}
-		} else if (ctx.getChild(0).getText() == "while") {
+		} else if (ctx.getChild(0).getText().equals("while")) {
 			st = new SymbolTable(st);
 			visitExpr((ExprContext) ctx.getChild(1));
 			visitStat((StatContext) ctx.getChild(3));			
 			st = st.getParent();
-		} else if (ctx.getChild(0).getText() == "if") {
+		} else if (ctx.getChild(0).getText().equals("if")) {
 			st = new SymbolTable(st);
 			visitExpr((ExprContext) ctx.getChild(1));
 			visitStat((StatContext) ctx.getChild(3));
@@ -134,12 +147,36 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			st = st.getParent();
 		} else if (ctx.getChild(1).getText().equals("=")) {
 			//found assignment
-			//First check variable is declared
-			String varName = ctx.getChild(0).getText();
-			typeMatch(((Variable) st.lookUpCurrLevelAndEnclosingLevels(varName)).getType(), visitAssign_rhs((Assign_rhsContext) ctx.getChild(3)));
+			ParseTree curr = ctx.getChild(0).getChild(0);//Curr = LHS first Child
+			if(curr instanceof BasicParser.Pair_elemContext){
+				//pair_elem
+				curr = curr.getChild(1);//Get Pair_elem expr
+			}
+			while (!(curr instanceof BasicParser.IdentContext)) {
+				curr = curr.getChild(0);
+			}
+			String varName = curr.getText();
+			
+			Variable var = ((Variable) getIdent(varName));
+			Type type = var.getType();
+			
+			if(type == Type.PAIR){
+				if(ctx.getChild(0).getChild(0).getChild(0).getText().equals("fst")){
+					type = ((Pair) var).getF();
+				} else {
+					type = ((Pair) var).getS();
+				}
+			}
+		
+			typeMatch(type, visitAssign_rhs((Assign_rhsContext) ctx.getChild(2)));
 		} else if (ctx.getChild(2).getText().equals("=")) {
 			//found declaration
 			String name = ctx.getChild(1).getText();
+			
+			if(st.lookUpCurrLevelAndEnclosingLevels(name) != null){
+				System.err.println("Redeclaration Error");
+			}
+			
 			Type type = getType(ctx.getChild(0).getText());
 			ParseTree rhs = ctx.getChild(3);
 			if (type == Type.PAIR) {
@@ -157,6 +194,8 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 				st.add(name, new Variable(type));
 			}
 			typeMatch(type, visitAssign_rhs((Assign_rhsContext) rhs));
+		} else if (ctx.getChild(0).getText().equals("print") || ctx.getChild(0).getText().equals("println")) {
+			return visitExpr((ExprContext) ctx.getChild(1));
 		}
 		return null;		
 	}
@@ -191,7 +230,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 		} else if (child.getText() == "call"){
 			//Found call
 			String func = ctx.getChild(1).getText();
-			Function f = (Function) st.lookUpCurrLevelAndEnclosingLevels(func);
+			Function f = (Function) getIdent(func);
 			if (f.getParams().length != ctx.getChild(3).getChildCount()) {
 				System.err.println("Incorrect number of parameters in call");
 	            return null;
@@ -204,9 +243,8 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			return f.getReturnType();
 		} else {
 			//Found expr
-			visitExpr((ExprContext) child);
+			return visitExpr((ExprContext) child);
 		}
-		return null;
 	}
 
 	@Override public Type visitExpr(@NotNull BasicParser.ExprContext ctx) {
@@ -232,11 +270,11 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 		}
 
 		if(ctx.getChild(0) instanceof BasicParser.IdentContext){
-			return ((Variable) st.lookUpCurrLevelAndEnclosingLevels(ctx.getText())).getType();
+			return ((Variable) getIdent(ctx.getText())).getType();
 		}
 
 		if (ctx.getChild(0) instanceof BasicParser.Unary_operContext) {			
-			String token = ctx.getChild(0).getText();
+			String token = token(ctx.getChild(0).getText());
 			
 			if (token == getToken(BasicLexer.NOT)) {
 				if (visitExpr((ExprContext) ctx.getChild(1)) != Type.BOOL) {
@@ -276,7 +314,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 				}
 			}
 		}
-		else if (ctx.getChild(0).getText() == getToken(BasicLexer.OPEN_PARENTHESES)) {
+		else if (token(ctx.getChild(0).getText()) == getToken(BasicLexer.OPEN_PARENTHESES)) {
 			return visitExpr((ExprContext) ctx.getChild(1));
 		}
 
@@ -296,7 +334,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 
 		}
 
-		if(ctx.getChild(1).getText() == getToken(BasicLexer.OPEN_BRACKET)){
+		if(token(ctx.getChild(1).getText()) == getToken(BasicLexer.OPEN_BRACKET)){
 			//Check Array Pointer is an Integer
 			typeMatch(Type.INT,visitExpr((ExprContext) ctx.getChild(2)));
 			//Check first Expr, if an ident, is an Array
@@ -312,7 +350,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 	}
 
 		public boolean checkArray(String ident) {
-		if (st.lookUpCurrLevelAndEnclosingLevels(ident) instanceof identifier_objects.Array) {
+		if (getIdent(ident) instanceof identifier_objects.Array) {
 			return true;
 		} else {
 			System.err.println("Type mismatch, must be an array");
@@ -322,7 +360,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 
 	@Override public Type visitBinary_oper(@NotNull BasicParser.Binary_operContext ctx) {
 
-		String token = ctx.getText();
+		String token = token(ctx.getText());
 		
 		if (token == getToken(BasicLexer.PLUS)
 				|| token == getToken(BasicLexer.MINUS)
