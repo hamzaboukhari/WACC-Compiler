@@ -138,7 +138,55 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 	}
 	
 	@Override public Type visitAssign_rhs(@NotNull BasicParser.Assign_rhsContext ctx) {
-		System.out.println("ARHS"+ctx.getChild(0));
+		String s = ctx.getChild(0).getText();
+		if (s == "newpair") {
+			//Found newpair
+			visitExpr((ExprContext) ctx.getChild(2));
+			visitExpr((ExprContext) ctx.getChild(4));
+			return Type.PAIR;
+		} else if (s == "[") {
+			//Found array_liter
+			if (ctx.getChildCount() == 2) {
+				return null;
+			} else if (ctx.getChildCount() == 3) {
+				return visitExpr((ExprContext) ctx.getChild(1));
+			} else {
+				Type prevType;
+				Type currType = null;
+				for (int i = 2 ; i < ctx.getChildCount() - 1 ; i++) {
+					prevType = visitExpr((ExprContext) ctx.getChild(i - 1));
+					currType = visitExpr((ExprContext) ctx.getChild(i));
+					typeMatch(currType, prevType);			
+				}
+				return currType;
+			}
+		} else if (s == "fst" || s == "snd") {
+			//Found pair_elem
+			visitExpr((ExprContext) ctx.getChild(1));
+			return Type.PAIR;
+		} else if (s == "call"){
+			//Found call
+			String func = ctx.getChild(1).getText();
+			Function f = (Function) st.lookUpCurrLevelAndEnclosingLevels(func);
+			if (ctx.getChildCount() > 4 && f.getParams().length > 0) {
+			//Check same num params
+				if (f.getParams().length != ctx.getChild(3).getChildCount()) {
+					System.err.println("Incorrect number of parameters in call");
+		            return null;
+				}
+				Type[] params = f.getParams();
+				for (int i = 0, j = 0 ; i < ctx.getChild(3).getChildCount() && j < params.length ; i += 2, j++) {
+					Type currType = visitExpr((ExprContext) ctx.getChild(i));
+					typeMatch(currType, params[j]);
+				}
+				return f.getReturnType();
+			} else {
+				//No params
+			}
+		} else {
+			//Found expr
+			visitExpr((ExprContext) ctx.getChild(0));
+		}
 		return null;
 	}
 	

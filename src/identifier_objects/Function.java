@@ -6,7 +6,7 @@ public class Function extends Identifier {
 	
 	SymbolTable symtab;
 	Type returnType;
-	Variable params[];
+	Type params[];
 	
 	public Function(Type rType){
 		returnType = rType;
@@ -14,6 +14,14 @@ public class Function extends Identifier {
 	
 	public void addST(SymbolTable st){
 		symtab = st;
+	}
+	
+	public Type[] getParams() {
+		return params;
+	}
+	
+	public Type getReturnType() {
+		return returnType;
 	}
 
 }

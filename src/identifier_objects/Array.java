@@ -6,6 +6,6 @@ public class Array extends Variable {
 		super(t);
 	}
 
-	Variable elements[];
+	Type elements[];
 
 }
