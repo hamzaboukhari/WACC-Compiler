@@ -32,20 +32,24 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 		visitProg(tree);
 	}
 	
-	private void typeMatch(Type t1, Type t2){
+	private boolean typeMatch(Type t1, Type t2){
 		if(t1 != t2){
 			//Semantic Error: Types do not match
 			System.err.println("Type Error");
 			errorCount++;
+			return false;
 		}
+		return true;
 	}
 	
-	private void checkDec(String varName){
+	private boolean checkDec(String varName){
 		if(st.lookUpCurrLevelAndEnclosingLevels(varName) == null){
 			//Semantic Error: Variable not declared
 			System.err.println("Variable " + varName + " not declared");
 			errorCount++;
+			return false;
 		}
+		return true;
 	}
 	
 	private Type getType(String type){
@@ -87,6 +91,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 		
 		if(ctx.getChildCount() == 8){
 			//Has Parameters
+			//TODO: Add param types to function variable Params
 			visitParam_list((Param_listContext) ctx.getChild(3));
 			funcBody = 6;
 		}
@@ -191,7 +196,36 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 	}
 	
 	@Override public Type visitExpr(@NotNull BasicParser.ExprContext ctx) {
-		//System.out.println(ctx.getText());
+		if(ctx.getChild(0) instanceof BasicParser.Int_literContext){
+			return Type.INT;
+		}
+		if(ctx.getChild(0) instanceof BasicParser.Bool_literContext){
+			return Type.BOOL;
+		}
+		if(ctx.getChild(0) instanceof BasicParser.Char_literContext){
+			return Type.CHAR;
+		}
+		if(ctx.getChild(0) instanceof BasicParser.Str_literContext){
+			return Type.STRING;
+		}
+		if(ctx.getChild(0) instanceof BasicParser.Pair_literContext){
+			return Type.PAIR;
+		}
+		if(ctx.getChild(0) instanceof BasicParser.IdentContext){
+			return ((Variable) st.lookUpCurrLevelAndEnclosingLevels(ctx.getText())).getType();
+		}
+		
+		if(ctx.getChild(1) instanceof BasicParser.Binary_operContext){
+			//Check expr1 type = expr2 type
+			Type e1 = visitExpr((ExprContext) ctx.getChild(0));
+			Type e2 = visitExpr((ExprContext) ctx.getChild(2));
+			typeMatch(e1,e2);
+			//Check binary_op type = lhs/rhs types
+			
+			//Return binary_op type
+			
+		}
+		
 		return null;
 	}
 	
