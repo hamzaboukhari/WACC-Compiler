@@ -39,7 +39,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 	private Identifier getIdent(String identName){
 		Identifier ident = st.lookUpCurrLevelAndEnclosingLevels(identName);
 		if(ident == null){
-			System.err.println("Identifier Not Declared");
+			System.err.println("Identifier "+identName+" Not Declared");
 		    return new Variable(Type.ANY);
 		}
 		return ident;
@@ -115,7 +115,16 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 
 	@Override public Type visitParam(@NotNull BasicParser.ParamContext ctx) {
 
-		Type type = getType(ctx.getChild(0).getText());
+		Type type;
+		if(ctx.getChild(0).getChild(0) instanceof BasicParser.Pair_typeContext){
+			type = Type.PAIR;
+		} else if(ctx.getChild(0).getChild(0) instanceof BasicParser.Array_typeContext){
+			type = getType(ctx.getChild(0).getChild(0).getChild(0).getText());
+		} else {
+			type = getType(ctx.getChild(0).getText());
+		}
+		
+		
 		((Function) getIdent(currFunc)).addParam(type);
 
 		String name = ctx.getChild(1).getText();
@@ -186,9 +195,9 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 				Type fst = getType(rhs.getChild(2).getText());
 				Type snd = getType(rhs.getChild(4).getText());
 				st.add(name, new Pair(fst, snd));
-			} else if (rhs.getChild(0).getChild(0).getText().equals("[")){
+			} else if (rhs.getChild(0).getChildCount() > 0 && rhs.getChild(0).getChild(0).getText().equals("[")){
 				type = getType(ctx.getChild(0).getChild(0).getChild(0).getText());
-				System.out.println(ctx.getChild(0).getText() + ": " + type);
+				//System.out.println(ctx.getChild(0).getText() + ": " + type);
 				Array arr = new Array(type);
 				for (int i = 1, j = 0 ; i < rhs.getChild(0).getChildCount() - 2 ; i += 2, j++) {
 					arr.addElement( visitExpr((ExprContext) rhs.getChild(0).getChild(i)) );
@@ -229,7 +238,9 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 				Type currType = null;
 				for (int i = 3 ; i < child.getChildCount() - 1 ; i+=2) {
 					prevType = visitExpr((ExprContext) child.getChild(i - 2));
+					//System.out.println("i - 2 : " + child.getChild(i - 2).getText());
 					currType = visitExpr((ExprContext) child.getChild(i));
+					//System.out.println("i : " + child.getChild(i).getText());
 					typeMatch(currType, prevType);			
 				}
 				return currType;
@@ -242,8 +253,11 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			//Found call
 			String func = ctx.getChild(1).getText();
 			Function f = (Function) getIdent(func);
-			if (f.getParams().length != ctx.getChild(3).getChildCount() - 5) {
-				System.err.println("Incorrect number of parameters in call, need " + f.getParams().length + " has " + (ctx.getChild(3).getChildCount() - 5));
+			int numOfParams = ctx.getChild(3).getChildCount() - ((ctx.getChild(3).getChildCount() - 1) / 2);
+			//System.out.println(ctx.getChild(3).getChildCount());
+			//System.out.println(ctx.getChild(3).getText());
+			if (f.getParams().length != numOfParams) {
+				System.err.println("Incorrect number of parameters in call, need " + f.getParams().length + " has " + numOfParams);
 	            return null;
 			}
 			Type[] params = f.getParams();
