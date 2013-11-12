@@ -382,16 +382,15 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 				|| token.equals(getToken(BasicLexer.MINUS))
 				|| token.equals(getToken(BasicLexer.MULTIPLY))
 				|| token.equals(getToken(BasicLexer.DIVIDE))
-				|| token.equals(getToken(BasicLexer.MOD))
-				|| token.equals(getToken(BasicLexer.GREATER))
+				|| token.equals(getToken(BasicLexer.MOD))){
+			return Type.INT;
+		}
+		
+		if (token.equals(getToken(BasicLexer.GREATER))
 				|| token.equals(getToken(BasicLexer.GREATER_EQUAL))
 				|| token.equals(getToken(BasicLexer.LESS))
-				|| token.equals(getToken(BasicLexer.LESS_EQUAL))){
-			return Type.INT;
-
-		}
-
-		if(token.equals(getToken(BasicLexer.EQUAL))
+				|| token.equals(getToken(BasicLexer.LESS_EQUAL))
+				|| token.equals(getToken(BasicLexer.EQUAL))
 				|| token.equals(getToken(BasicLexer.NOT_EQUAL))){
 			return Type.ANY;
 		}
