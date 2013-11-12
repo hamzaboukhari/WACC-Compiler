@@ -169,7 +169,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 				}
 			}
 
-			System.out.println(ctx.getText());
+			//System.out.println(ctx.getText());
 			typeMatch(type, visitAssign_rhs((Assign_rhsContext) ctx.getChild(2)));
 		} else if (ctx.getChildCount() > 2 && ctx.getChild(2).getText().equals("=")) {
 			//found declaration
@@ -188,10 +188,10 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 				st.add(name, new Pair(fst, snd));
 			} else if (rhs.getChild(0).getChild(0).getText().equals("[")){
 				type = getType(ctx.getChild(0).getChild(0).getChild(0).getText());
-				System.out.println(ctx.getChild(0).getText() + ": " + type);
+				//System.out.println(ctx.getChild(0).getText() + ": " + type);
 				Array arr = new Array(type);
 				for (int i = 1, j = 0 ; i < rhs.getChild(0).getChildCount() - 2 ; i += 2, j++) {
-					arr.addElement( getTypeFromVal(rhs.getChild(0).getChild(i).getText()) );
+					arr.addElement( visitExpr((ExprContext) rhs.getChild(0).getChild(i)) );
 				}
 				st.add(name, arr);
 			} else {
@@ -219,16 +219,17 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			return Type.PAIR;
 		} else if (child.getChildCount() > 0 && child.getChild(0).getText().equals("[")) {
 			//Found array_liter
+			//System.out.println("sfsdgdfdsfs" + child.getChild(1).getText());
 			if (ctx.getChildCount() == 2) {
 				return Type.ANY;
 			} else if (ctx.getChildCount() == 3) {
-				return visitExpr((ExprContext) ctx.getChild(1));
+				return visitExpr((ExprContext) child.getChild(1));
 			} else {
 				Type prevType;
 				Type currType = null;
-				for (int i = 2 ; i < ctx.getChildCount() - 1 ; i++) {
-					prevType = visitExpr((ExprContext) ctx.getChild(i - 1));
-					currType = visitExpr((ExprContext) ctx.getChild(i));
+				for (int i = 3 ; i < child.getChildCount() - 1 ; i+=2) {
+					prevType = visitExpr((ExprContext) child.getChild(i - 2));
+					currType = visitExpr((ExprContext) child.getChild(i));
 					typeMatch(currType, prevType);			
 				}
 				return currType;
