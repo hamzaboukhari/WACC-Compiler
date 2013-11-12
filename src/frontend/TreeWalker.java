@@ -52,7 +52,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 		}
 		if(t1 != t2){
 			//Semantic Error: Types do not match
-			System.err.println("Type Error");
+			System.err.println("Type Error ("+t1+" != "+t2+")");
 			return false;
 		}
 		return true;
@@ -168,7 +168,8 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 					type = ((Pair) var).getS();
 				}
 			}
-		
+
+			System.out.println(ctx.getText());
 			typeMatch(type, visitAssign_rhs((Assign_rhsContext) ctx.getChild(2)));
 		} else if (ctx.getChildCount() > 2 && ctx.getChild(2).getText().equals("=")) {
 			//found declaration
@@ -180,15 +181,17 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			
 			Type type = getType(ctx.getChild(0).getText());
 			ParseTree rhs = ctx.getChild(3);
+			
 			if (type == Type.PAIR) {
 				Type fst = getType(rhs.getChild(2).getText());
 				Type snd = getType(rhs.getChild(4).getText());
 				st.add(name, new Pair(fst, snd));
-			} else if (rhs.getChild(0).getText() == "["){
+			} else if (rhs.getChild(0).getChild(0).getText().equals("[")){
+				type = getType(ctx.getChild(0).getChild(0).getChild(0).getText());
+				System.out.println(ctx.getChild(0).getText() + ": " + type);
 				Array arr = new Array(type);
-				for (int i = 1, j = 0 ; i < rhs.getChild(0).getChildCount() - 1 ; i += 2, j++) {
-					Type[] elems = arr.getElems();
-					elems[j] = getType(rhs.getChild(0).getChild(i).getText());
+				for (int i = 1, j = 0 ; i < rhs.getChild(0).getChildCount() - 2 ; i += 2, j++) {
+					arr.addElement( getTypeFromVal(rhs.getChild(0).getChild(i).getText()) );
 				}
 				st.add(name, arr);
 			} else {

@@ -14,8 +14,8 @@ public class Main {
 	
 	public static void main(String[] args) throws IOException{
 		// Get file name
-		String file = args[0];
-		//String file = "../wacc_examples/valid/function/functionManyArguments.wacc";
+		//String file = args[0];
+		String file = "/homes/hj512/wacc_examples/valid/array/array.wacc";
 		//System.out.println("File: " + file);
 		
 		// Read in file
@@ -34,7 +34,7 @@ public class Main {
 		ProgContext tree = parser.prog();
 		
 		// Debug
-		//System.out.println(tree.toStringTree(parser));
+		System.out.println(tree.toStringTree(parser));
 		
 		if(parser.getNumberOfSyntaxErrors() == 0){
 			//Check Semantics
