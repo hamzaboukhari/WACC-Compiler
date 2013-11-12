@@ -188,7 +188,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 				st.add(name, new Pair(fst, snd));
 			} else if (rhs.getChild(0).getChild(0).getText().equals("[")){
 				type = getType(ctx.getChild(0).getChild(0).getChild(0).getText());
-				//System.out.println(ctx.getChild(0).getText() + ": " + type);
+				System.out.println(ctx.getChild(0).getText() + ": " + type);
 				Array arr = new Array(type);
 				for (int i = 1, j = 0 ; i < rhs.getChild(0).getChildCount() - 2 ; i += 2, j++) {
 					arr.addElement( visitExpr((ExprContext) rhs.getChild(0).getChild(i)) );
@@ -220,9 +220,9 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 		} else if (child.getChildCount() > 0 && child.getChild(0).getText().equals("[")) {
 			//Found array_liter
 			//System.out.println("sfsdgdfdsfs" + child.getChild(1).getText());
-			if (ctx.getChildCount() == 2) {
+			if (child.getChildCount() == 2) {
 				return Type.ANY;
-			} else if (ctx.getChildCount() == 3) {
+			} else if (child.getChildCount() == 3) {
 				return visitExpr((ExprContext) child.getChild(1));
 			} else {
 				Type prevType;

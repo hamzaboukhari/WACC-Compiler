@@ -15,7 +15,7 @@ public class Main {
 	public static void main(String[] args) throws IOException{
 		// Get file name
 		//String file = args[0];
-		String file = "/homes/hj512/wacc_examples/valid/array/array.wacc";
+		String file = "/homes/hb2212/wacc_examples/valid/expressions/charComparisonExpr.wacc";
 		//System.out.println("File: " + file);
 		
 		// Read in file

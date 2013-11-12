@@ -67,7 +67,7 @@ base_type
 	| STRING
 	;
 	
-array_type : ( base_type | pair_type ) OPEN_BRACKET CLOSE_BRACKET ;
+array_type : ( base_type | pair_type ) ( OPEN_BRACKET CLOSE_BRACKET )+ ;
 
 pair_type : PAIR OPEN_PARENTHESES pair_elem_type COMMA pair_elem_type CLOSE_PARENTHESES ;
 
