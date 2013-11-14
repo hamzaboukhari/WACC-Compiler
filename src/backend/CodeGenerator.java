@@ -60,7 +60,11 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 	
 	private void addPush(String str){
-		output += "PUSH " + str + "\n";
+		output += "PUSH {" + str + "}\n";
+	}
+	
+	private void addPop(String str){
+		output += "POP {" + str + "}\n";
 	}
 
 	@Override
@@ -191,7 +195,10 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		addDirective("text");
 		addDirective("global main");
 		addLabel("main");
-		return super.visitProgram(ctx);
+		addPush("lr");
+		super.visitProgram(ctx);
+		addPop("pc");
+		return null;
 	}
 
 	@Override
