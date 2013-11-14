@@ -161,7 +161,10 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitStat(StatContext ctx) {
-		// TODO Auto-generated method stub
+		if (ctx.getChild(0).getText().equals("exit")) {
+			addLine("LDR r0, =" + ctx.getChild(1).getText());
+			addLine("BL exit");
+		}
 		return super.visitStat(ctx);
 	}
 
