@@ -56,15 +56,15 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 	
 	private void addLine(String str){
-		output += str + "\n";
+		output += "\t" + str + "\n";
 	}
 	
 	private void addPush(String str){
-		output += "PUSH {" + str + "}\n";
+		output += "\tPUSH {" + str + "}\n";
 	}
 	
 	private void addPop(String str){
-		output += "POP {" + str + "}\n";
+		output += "\tPOP {" + str + "}\n";
 	}
 
 	@Override

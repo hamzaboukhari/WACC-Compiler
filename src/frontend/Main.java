@@ -6,6 +6,8 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import backend.CodeGenerator;
+
 import antlr.BasicLexer;
 import antlr.BasicParser;
 import antlr.BasicParser.ProgContext;
@@ -15,7 +17,7 @@ public class Main {
 	public static void main(String[] args) throws IOException{
 		// Get file name
 		//String file = args[0];
-		String file = "/homes/hb2212/wacc_examples/valid/function/functionManyArguments.wacc";
+		String file = "../wacc_examples/valid/exit/exitBasic.wacc";
 		//System.out.println("File: " + file);
 		
 		// Read in file
@@ -34,12 +36,16 @@ public class Main {
 		ProgContext tree = parser.prog();
 		
 		// Debug
-		System.out.println(tree.toStringTree(parser));
+		//System.out.println(tree.toStringTree(parser));
 		
 		if(parser.getNumberOfSyntaxErrors() == 0){
 			//Check Semantics
 			TreeWalker walker = new TreeWalker(tree);
 			walker.validateSemantics();
+			
+			CodeGenerator codeGen = new CodeGenerator(tree);
+			codeGen.start();
+			System.out.println(codeGen.getOutput());
 		} else {
 			System.out.println("Syntax Errors: " + parser.getNumberOfSyntaxErrors());
 		}
