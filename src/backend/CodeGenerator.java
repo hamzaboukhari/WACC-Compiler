@@ -47,16 +47,20 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		visitProg(tree);
 	}
 	
-	private void addDirective(String d){
-		output += "." + d + "\n";
+	private void addDirective(String str){
+		output += "." + str + "\n";
 	}
 	
-	private void addLabel(String l){
-		output += l + ":\n";
+	private void addLabel(String str){
+		output += str + ":\n";
 	}
 	
-	private void addLine(String l){
-		output += l + "\n";
+	private void addLine(String str){
+		output += str + "\n";
+	}
+	
+	private void addPush(String str){
+		output += "PUSH " + str + "\n";
 	}
 
 	@Override
