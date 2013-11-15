@@ -37,14 +37,25 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	private ProgContext tree;
 	private Map<String,String> output;
 	private String currLabel;
-	private int usedRegs;
+	private boolean[] freeRegs;
+	
+	private final int NUM_OF_REGS = 12;
+	private final String RESULT_REG = "r0";
+	private final String PARAM_REG = "r1";
 	
 	public CodeGenerator(ProgContext t){
 		tree = t;
 		output = new HashMap<String,String>();
 		currLabel = "main";
+		setRegs();
 		addNewLabel(currLabel);
-		usedRegs = 0;
+	}
+	
+	private void setRegs(){
+		freeRegs = new boolean[NUM_OF_REGS];
+		for(int i=0; i<freeRegs.length; i++){
+			freeRegs[i] = true;
+		}
 	}
 	
 	private void addNewLabel(String label){
@@ -68,12 +79,19 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 	
 	private void resetRegs(){
-		usedRegs = 0;
+		setRegs();
 	}
 	
-	private String getReg(){
-		usedRegs++;
-		return "r"+(usedRegs-1);
+	private String getFreeReg(){
+		int freeReg = 0;
+		for(int i=0; i<freeRegs.length; i++){
+			if(freeRegs[i] == true){
+				freeReg = i;
+				freeRegs[i] = false;
+				break;
+			}
+		}
+		return "r"+(freeReg);
 	}
 	
 	private void addDirective(String str){
@@ -220,7 +238,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	@Override
 	public String visitStat(StatContext ctx) {
 		if (ctx.getChild(0).getText().equals("exit")) {
-			addLDR("r0",ctx.getChild(1).getText());
+			addLDR(RESULT_REG,ctx.getChild(1).getText());
 			addBL("exit");
 		}
 		return super.visitStat(ctx);
