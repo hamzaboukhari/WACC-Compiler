@@ -17,7 +17,7 @@ public class BasicParser extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		WHILE=13, DOUBLE_QUOTE=49, MOD=35, CHAR=26, DO=14, EVERYTHING=63, EQUALS=1, 
+		WHILE=13, MOD=35, DOUBLE_QUOTE=49, CHAR=26, DO=14, EVERYTHING=63, EQUALS=1, 
 		NOT=29, AND=44, ESCAPED_CHAR=52, ORD=31, TO_INT=32, LENGTH=30, IF=9, OPEN_BRACKET=53, 
 		FREE=4, SINGLE_QUOTE=50, CLOSE_PARENTHESES=58, GREATER=38, THEN=10, MULTIPLY=33, 
 		COMMA=55, NOT_EQUAL=43, IS=18, DONE=15, PRINTLN=8, BEGIN=16, EQUAL=42, 
@@ -290,45 +290,45 @@ public class BasicParser extends Parser {
 
 	public static class StatContext extends ParserRuleContext {
 		public int _p;
-		public TerminalNode THEN() { return getToken(BasicParser.THEN, 0); }
-		public TerminalNode PRINT() { return getToken(BasicParser.PRINT, 0); }
-		public TerminalNode SEMICOLON() { return getToken(BasicParser.SEMICOLON, 0); }
-		public TerminalNode EQUALS() { return getToken(BasicParser.EQUALS, 0); }
-		public TerminalNode DONE() { return getToken(BasicParser.DONE, 0); }
 		public TerminalNode SKIP() { return getToken(BasicParser.SKIP, 0); }
 		public TerminalNode WHILE() { return getToken(BasicParser.WHILE, 0); }
 		public TerminalNode IF() { return getToken(BasicParser.IF, 0); }
+		public Assign_lhsContext assign_lhs() {
+			return getRuleContext(Assign_lhsContext.class,0);
+		}
+		public TerminalNode DO() { return getToken(BasicParser.DO, 0); }
+		public ExprContext expr() {
+			return getRuleContext(ExprContext.class,0);
+		}
+		public TerminalNode RETURN() { return getToken(BasicParser.RETURN, 0); }
+		public TerminalNode FREE() { return getToken(BasicParser.FREE, 0); }
+		public List<StatContext> stat() {
+			return getRuleContexts(StatContext.class);
+		}
+		public TerminalNode EXIT() { return getToken(BasicParser.EXIT, 0); }
+		public TerminalNode PRINTLN() { return getToken(BasicParser.PRINTLN, 0); }
+		public TerminalNode PRINT() { return getToken(BasicParser.PRINT, 0); }
+		public TerminalNode THEN() { return getToken(BasicParser.THEN, 0); }
+		public TerminalNode SEMICOLON() { return getToken(BasicParser.SEMICOLON, 0); }
+		public TerminalNode EQUALS() { return getToken(BasicParser.EQUALS, 0); }
+		public TerminalNode DONE() { return getToken(BasicParser.DONE, 0); }
 		public Assign_rhsContext assign_rhs() {
 			return getRuleContext(Assign_rhsContext.class,0);
 		}
 		public StatContext stat(int i) {
 			return getRuleContext(StatContext.class,i);
 		}
-		public TerminalNode DO() { return getToken(BasicParser.DO, 0); }
-		public Assign_lhsContext assign_lhs() {
-			return getRuleContext(Assign_lhsContext.class,0);
-		}
 		public TerminalNode ELSE() { return getToken(BasicParser.ELSE, 0); }
-		public ExprContext expr() {
-			return getRuleContext(ExprContext.class,0);
-		}
 		public TerminalNode READ() { return getToken(BasicParser.READ, 0); }
 		public TypeContext type() {
 			return getRuleContext(TypeContext.class,0);
 		}
-		public TerminalNode RETURN() { return getToken(BasicParser.RETURN, 0); }
 		public TerminalNode ENDIF() { return getToken(BasicParser.ENDIF, 0); }
-		public List<StatContext> stat() {
-			return getRuleContexts(StatContext.class);
-		}
-		public TerminalNode FREE() { return getToken(BasicParser.FREE, 0); }
-		public TerminalNode EXIT() { return getToken(BasicParser.EXIT, 0); }
 		public TerminalNode BEGIN() { return getToken(BasicParser.BEGIN, 0); }
 		public IdentContext ident() {
 			return getRuleContext(IdentContext.class,0);
 		}
 		public TerminalNode END() { return getToken(BasicParser.END, 0); }
-		public TerminalNode PRINTLN() { return getToken(BasicParser.PRINTLN, 0); }
 		public StatContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
 		public StatContext(ParserRuleContext parent, int invokingState, int _p) {
 			super(parent, invokingState);
@@ -1287,8 +1287,8 @@ public class BasicParser extends Parser {
 	public static class Binary_operContext extends ParserRuleContext {
 		public TerminalNode GREATER_EQUAL() { return getToken(BasicParser.GREATER_EQUAL, 0); }
 		public TerminalNode AND() { return getToken(BasicParser.AND, 0); }
-		public TerminalNode OR() { return getToken(BasicParser.OR, 0); }
 		public TerminalNode MINUS() { return getToken(BasicParser.MINUS, 0); }
+		public TerminalNode OR() { return getToken(BasicParser.OR, 0); }
 		public TerminalNode MULTIPLY() { return getToken(BasicParser.MULTIPLY, 0); }
 		public TerminalNode EQUAL() { return getToken(BasicParser.EQUAL, 0); }
 		public TerminalNode DIVIDE() { return getToken(BasicParser.DIVIDE, 0); }
