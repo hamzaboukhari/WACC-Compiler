@@ -45,7 +45,7 @@ public class Main {
 			
 			CodeGenerator codeGen = new CodeGenerator(tree);
 			codeGen.start();
-			System.out.println(codeGen.getOutput());
+			codeGen.printOutput();
 		} else {
 			System.out.println("Syntax Errors: " + parser.getNumberOfSyntaxErrors());
 		}

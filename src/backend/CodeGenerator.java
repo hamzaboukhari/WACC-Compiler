@@ -1,5 +1,8 @@
 package backend;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import antlr.BasicParser.Arg_listContext;
 import antlr.BasicParser.Array_literContext;
 import antlr.BasicParser.Array_typeContext;
@@ -32,39 +35,90 @@ import antlr.BasicParser.ProgContext;
 public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	
 	private ProgContext tree;
-	private String output;
+	private Map<String,String> output;
+	private String currLabel;
+	private int usedRegs;
 	
 	public CodeGenerator(ProgContext t){
 		tree = t;
-		output = "";
+		output = new HashMap<String,String>();
+		currLabel = "main";
+		addNewLabel(currLabel);
+		usedRegs = 0;
 	}
 	
-	public String getOutput(){
-		return output;
+	private void addNewLabel(String label){
+		output.put(label, "");
 	}
 	
 	public void start(){
 		visitProg(tree);
 	}
 	
+	public void printOutput(){
+		String res = "";
+				
+		if(output.get("data")!=null){
+			res += ".data\n" + output.get("data");
+		}
+		
+		res += output.get("main");
+		
+		System.out.println(res);
+	}
+	
+	private void resetRegs(){
+		usedRegs = 0;
+	}
+	
+	private String getReg(){
+		usedRegs++;
+		return "r"+(usedRegs-1);
+	}
+	
 	private void addDirective(String str){
-		output += "." + str + "\n";
+		String toAdd = "." + str + "\n";
+		output.put(currLabel, output.get(currLabel) + toAdd);
 	}
 	
 	private void addLabel(String str){
-		output += str + ":\n";
+		String toAdd = str + ":\n";
+		output.put(currLabel, output.get(currLabel) + toAdd);
 	}
 	
 	private void addLine(String str){
-		output += "\t" + str + "\n";
+		String toAdd = "\t" + str + "\n";
+		output.put(currLabel, output.get(currLabel) + toAdd);
 	}
 	
-	private void addPush(String str){
-		output += "\tPUSH {" + str + "}\n";
+	private void addPUSH(String str){
+		String toAdd = "\tPUSH {" + str + "}\n";
+		output.put(currLabel, output.get(currLabel) + toAdd);
 	}
 	
-	private void addPop(String str){
-		output += "\tPOP {" + str + "}\n";
+	private void addPOP(String str){
+		String toAdd = "\tPOP {" + str + "}\n";
+		output.put(currLabel, output.get(currLabel) + toAdd);
+	}
+	
+	private void addLDR(String strA,String strB){
+		String toAdd = "\tLDR " + strA + ", " + strB + "\n";
+		output.put(currLabel, output.get(currLabel) + toAdd);
+	}
+	
+	private void addSTR(String strA,String strB){
+		String toAdd = "\tSTR " + strA + ", " + strB + "\n";
+		output.put(currLabel, output.get(currLabel) + toAdd);
+	}
+	
+	private void addMOV(String strA,String strB){
+		String toAdd = "\tMOV " + strA + ", " + strB + "\n";
+		output.put(currLabel, output.get(currLabel) + toAdd);
+	}
+	
+	private void addBL(String str){
+		String toAdd = "\tBL " + str + "\n";
+		output.put(currLabel, output.get(currLabel) + toAdd);
 	}
 
 	@Override
@@ -166,8 +220,8 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	@Override
 	public String visitStat(StatContext ctx) {
 		if (ctx.getChild(0).getText().equals("exit")) {
-			addLine("LDR r0, =" + ctx.getChild(1).getText());
-			addLine("BL exit");
+			addLDR("r0",ctx.getChild(1).getText());
+			addBL("exit");
 		}
 		return super.visitStat(ctx);
 	}
@@ -195,10 +249,10 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		addDirective("text");
 		addDirective("global main");
 		addLabel("main");
-		addPush("lr");
-		super.visitProgram(ctx);
-		addPop("pc");
-		return null;
+		addPUSH("lr");
+		String ret = super.visitProgram(ctx);
+		addPOP("pc");
+		return ret;
 	}
 
 	@Override
