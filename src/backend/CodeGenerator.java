@@ -50,7 +50,8 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		output = new HashMap<String,String>();
 		currLabel = "main";
 		setRegs();
-		addNewLabel(currLabel);
+		addNewLabel("main");
+		addNewLabel("data");
 		stringLabelIndex = 0;
 	}
 	
@@ -72,7 +73,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	public void printOutput() {
 		String res = "";
 				
-		if(output.get("data") != null){
+		if(output.get("data") != ""){
 			res += ".data\n" + output.get("data");
 		}
 		
