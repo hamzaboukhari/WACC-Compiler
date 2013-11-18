@@ -40,14 +40,24 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	private String prevLabel;
 	private int stringLabelIndex;
 	private boolean[] freeRegs;
+	private int totalSize;
+	private Map<String, String> variables;
 	
 	private final int NUM_OF_REGS = 12;
 	private final String RESULT_REG = "r0";
 	private final String PARAM_REG = "r1";
+	private final String STACK_POINTER = "sp";
+	private final String FALSE = "#0";
+	private final String TRUE = "#1";
+	private final int SIZE_INT = 4;
+	private final int SIZE_STRING = 4;
+	private final int SIZE_BOOL = 1;
+	private final int SIZE_CHAR = 1;
 	
 	public CodeGenerator(ProgContext t) {
 		tree = t;
 		output = new HashMap<String,String>();
+		variables = new HashMap<String, String>();
 		currLabel = "main";
 		setRegs();
 		addNewLabel("main");
@@ -98,6 +108,20 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		return "r" + (freeReg);
 	}
 	
+	private int getSize(String str) {
+		if (str.equals("int")) {
+			return SIZE_INT;
+		} else if (str.equals("string")) {
+			return SIZE_STRING;
+		} else if (str.equals("bool")) {
+			return SIZE_BOOL;
+		} else if (str.equals("char")) {
+			return SIZE_CHAR;
+		} else {
+			return 0;
+		}
+	}
+	
 	private void addDirective(String str) {
 		String toAdd = "." + str + "\n";
 		output.put(currLabel, output.get(currLabel) + toAdd);
@@ -133,6 +157,11 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		output.put(currLabel, output.get(currLabel) + toAdd);
 	}
 	
+	private void addSTRB(String strA,String strB) {
+		String toAdd = "\tSTRB " + strA + ", " + strB + "\n";
+		output.put(currLabel, output.get(currLabel) + toAdd);
+	}
+	
 	private void addMOV(String strA,String strB) {
 		String toAdd = "\tMOV " + strA + ", " + strB + "\n";
 		output.put(currLabel, output.get(currLabel) + toAdd);
@@ -143,6 +172,16 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		output.put(currLabel, output.get(currLabel) + toAdd);
 	}
 
+	private void addSUB(String strA, String strB, String strC){
+		String toAdd = "\tSUB " + strA + ", " + strB + ", " + strC + "\n";
+		output.put(currLabel, output.get(currLabel) + toAdd);
+	}
+	
+	private void addADD(String strA, String strB, String strC){
+		String toAdd = "\tADD " + strA + ", " + strB + ", " + strC + "\n";
+		output.put(currLabel, output.get(currLabel) + toAdd);
+	}
+	
 	@Override
 	public String visitPair_liter(Pair_literContext ctx) {
 		// TODO Auto-generated method stub
@@ -163,8 +202,29 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitType(TypeContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitType(ctx);
+		totalSize = getSize(ctx.getText());
+		String size = "#" + totalSize;
+		addSUB(STACK_POINTER, STACK_POINTER, size);
+		variables.put(ctx.getParent().getChild(1).getText(), ctx.getText());
+		if (ctx.getText().equals("int")) {
+			addLDR(RESULT_REG, "=" + ctx.getParent().getChild(3).getText());
+			addSTR(RESULT_REG, "[" + STACK_POINTER + "]");
+		} else if (ctx.getText().equals("bool")) {
+			if (ctx.getParent().getChild(3).getText().equals("true")) {
+				addMOV(RESULT_REG, TRUE);
+			} else {
+				addMOV(RESULT_REG, FALSE);
+			}
+			addSTRB(RESULT_REG, "[" + STACK_POINTER + "]");
+		} else if (ctx.getText().equals("char")) {
+			addMOV(RESULT_REG, "#" + ctx.getParent().getChild(3).getText());
+			addSTRB(RESULT_REG, "[" + STACK_POINTER + "]");
+		} else if (ctx.getText().equals("string")) {
+			addLDR(RESULT_REG, "=" + "msg_" + stringLabelIndex);
+			addSTR(RESULT_REG, "[" + STACK_POINTER + "]");
+		}
+		addADD(STACK_POINTER, STACK_POINTER, size);
+		return null;
 	}
 
 	@Override
@@ -243,7 +303,39 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	
 	@Override
 	public String visitAssign_lhs(Assign_lhsContext ctx) {
-		// TODO Auto-generated method stub
+		String var = ctx.getChild(0).getText();
+		String type = variables.get(var);
+		totalSize = getSize(type);
+		String size = "#" + totalSize;
+		addSUB(STACK_POINTER, STACK_POINTER, size);
+		if (type.equals("int")) {
+			addLDR(RESULT_REG, "=" + ctx.getParent().getChild(2).getText());
+			addSTR(RESULT_REG, "[" + STACK_POINTER + "]");
+		} else if (type.equals("bool")) {
+			if (ctx.getParent().getChild(3).getText().equals("true")) {
+				addMOV(RESULT_REG, TRUE);
+			} else {
+				addMOV(RESULT_REG, FALSE);
+			}
+			addSTRB(RESULT_REG, "[" + STACK_POINTER + "]");
+		} else if (type.equals("char")) {
+			addMOV(RESULT_REG, "#" + ctx.getParent().getChild(2).getText());
+			addSTRB(RESULT_REG, "[" + STACK_POINTER + "]");
+		} else if (type.equals("string")) {
+			addLDR(RESULT_REG, "=" + "msg_" + stringLabelIndex);
+			addSTR(RESULT_REG, "[" + STACK_POINTER + "]");
+		}
+		addADD(STACK_POINTER, STACK_POINTER, size);
+		//return null;
+		/*
+		if (ctx.getChild(0) instanceof BasicParser.IdentContext) {
+			visitIdent((IdentContext) ctx.getChild(0));
+		} else if (ctx.getChild(0) instanceof BasicParser.ExprContext) {
+			visitExpr((ExprContext) ctx.getChild(0));
+		} else {
+			visitPair_elem_type((Pair_elem_typeContext) ctx.getChild(0));
+		}
+		*/
 		return super.visitAssign_lhs(ctx);
 	}
 
@@ -256,7 +348,17 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		else if (ctx.getChild(0).getText().equals("print") || ctx.getChild(0).getText().equals("println")) {
 			addPrint(ctx.getChild(1).getText());
 		}	
-		
+	/* else if (ctx.getChild(0) instanceof BasicParser.StatContext) {
+	for (int i = 0 ; i < ctx.getChildCount() ; i += 2) {
+		if (ctx.getChild(i).getChild(0) instanceof BasicParser.TypeContext) {
+			totalSize += getSize(ctx.getChild(i).getChild(0).getText());
+		}
+	}
+	addSUB(STACK_POINTER, STACK_POINTER, "#" + totalSize);
+	super.visitStat(ctx);
+	addADD(STACK_POINTER, STACK_POINTER, "#" + totalSize);
+	
+}*/
 		return super.visitStat(ctx);
 	}
 
