@@ -552,7 +552,31 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 	
 	public void addPrintln() {
+		String prevLabel = currLabel;
+		currLabel = "data";
 		
+		// Add msg label
+		addLabel("msg_" + msgIndex++);
+		addLine(".word 1");
+		addLine(".ascii  \"\\0\"");
+		
+		addNewLabel("p_print_ln");
+		currLabel = "p_print_ln";
+		
+		// Get register
+		String reg1 = getFreeReg();
+		int reg1_n = Integer.parseInt(reg1.substring(1));
+		
+		addPUSH("lr");
+		addLDR(reg1, "=msg_" + (msgIndex - 1));
+		addADD(reg1, reg1, "#4");
+		addBL("puts");
+		addMOV(reg1, "#0");
+		addBL("fflush");
+		addPOP("pc");
+		
+		freeRegs[reg1_n] = true;		
+		currLabel = prevLabel;
 	}
 	
 	@Override
