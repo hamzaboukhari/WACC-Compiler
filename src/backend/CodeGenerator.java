@@ -2,6 +2,7 @@ package backend;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.antlr.v4.runtime.tree.ParseTree;
 
@@ -37,24 +38,32 @@ import antlr.BasicParser.ProgContext;
 public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	
 	private ProgContext tree;
+	
 	private Map<String, String> output;
-	private String currLabel;
-	private String prevLabel;
-	private int stringLabelIndex;
-	private boolean[] freeRegs;
-	private int totalSize;
 	private Map<String, String> variables;
+	private String currLabel;
+
+	private boolean[] freeRegs;
+	private String lastUsedReg;
+	
+	private int loopIndex;
 	private int msgIndex;
-	private boolean[] message;
-	private boolean[] print;
 	private int stringIndex;
 	
+	private int totalSize;
+
+	private boolean[] message;
+	private boolean[] print;
+	
 	private final int NUM_OF_REGS = 12;
+	
 	private final String RESULT_REG = "r0";
 	private final String PARAM_REG = "r1";
 	private final String STACK_POINTER = "sp";
+	
 	private final String FALSE = "#0";
 	private final String TRUE = "#1";
+	
 	private final int SIZE_INT = 4;
 	private final int SIZE_STRING = 4;
 	private final int SIZE_BOOL = 1;
@@ -65,11 +74,10 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		output = new HashMap<String,String>();
 		variables = new HashMap<String, String>();
 		currLabel = "main";
+		setOutput();
 		setRegs();
-		addNewLabel("main");
-		addNewLabel("data");
-		stringLabelIndex = 0;
-		
+
+		loopIndex = 0;
 		msgIndex = 0;
 		stringIndex = 0;
 		
@@ -89,28 +97,60 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		}
 	}
 	
+	private void setOutput(){
+		output.put("data", ".data\n");
+		output.put("main", "");
+		addDirective("text");
+		addDirective("global main");
+		addLabel("main");
+	}
+	
 	private void addNewLabel(String label) {
-		output.put(label, "");
+		output.put(label, label+":\n");
+	}
+	
+	private String addNewLoopLabel() {
+		String newLoopLabel = "L" + loopIndex;
+		loopIndex++;
+		addNewLabel(newLoopLabel);
+		return newLoopLabel;
 	}
 	
 	public void start() {
 		visitProg(tree);
 	}
 	
-	public void printOutput() {
+	private String compileOutput(){
 		String res = "";
-				
-		if(output.get("data") != ""){
-			res += ".data\n" + output.get("data");
+		
+		if(output.get("data") != ".data\n"){
+			res += output.get("data") + "\n";
 		}
 		
 		res += output.get("main");
 		
-		System.out.println(res);
+		Set<String> labels = output.keySet();
+		
+		for (String l : labels) {
+			if(!(l.equals("data") || l.equals("main"))){
+				res += output.get(l);
+			}
+		}
+		
+		return res;
+	}
+	
+	public void printOutput() {
+		System.out.println(compileOutput());
 	}
 	
 	private void resetRegs() {
 		setRegs();
+	}
+	
+	private void freeReg(String reg) {
+		int r = ((int) reg.charAt(1)) - 48;
+		freeRegs[r] = true;
 	}
 	
 	private String getFreeReg() {
@@ -141,79 +181,77 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		}
 	}
 	
+	private void add(String str){
+		output.put(currLabel, output.get(currLabel) + str + "\n");
+	}
+	
 	private void addDirective(String str) {
-		String toAdd = "." + str + "\n";
-		output.put(currLabel, output.get(currLabel) + toAdd);
+		add("." + str);
 	}
 	
 	private void addLabel(String str) {
-		String toAdd = str + ":\n";
-		output.put(currLabel, output.get(currLabel) + toAdd);
+		add(str + ":");
 	}
 	
 	private void addLine(String str) {
-		String toAdd = "\t" + str + "\n";
-		output.put(currLabel, output.get(currLabel) + toAdd);
+		add("\t" + str);
 	}
 	
 	private void addPUSH(String str) {
-		String toAdd = "\tPUSH {" + str + "}\n";
-		output.put(currLabel, output.get(currLabel) + toAdd);
+		addLine("PUSH {" + str + "}");
 	}
 	
 	private void addPOP(String str) {
-		String toAdd = "\tPOP {" + str + "}\n";
-		output.put(currLabel, output.get(currLabel) + toAdd);
-	}
-	
-	private void addCMP(String strA, String strB) {
-		String toAdd = "\tCMP " + strA + ", " + strB + "\n";
-		output.put(currLabel, output.get(currLabel) + toAdd);
+		addLine("POP {" + str + "}");
 	}
 	
 	private void addLDR(String strA,String strB) {
-		String toAdd = "\tLDR " + strA + ", " + strB + "\n";
-		output.put(currLabel, output.get(currLabel) + toAdd);
+		addLine("LDR " + strA + ", " + strB);
 	}
 	
 	private void addSTR(String strA,String strB) {
-		String toAdd = "\tSTR " + strA + ", " + strB + "\n";
-		output.put(currLabel, output.get(currLabel) + toAdd);
+		addLine("STR " + strA + ", " + strB);
 	}
 	
 	private void addSTRB(String strA,String strB) {
-		String toAdd = "\tSTRB " + strA + ", " + strB + "\n";
-		output.put(currLabel, output.get(currLabel) + toAdd);
+		addLine("STRB " + strA + ", " + strB);
 	}
 	
 	private void addMOV(String strA,String strB) {
-		String toAdd = "\tMOV " + strA + ", " + strB + "\n";
-		output.put(currLabel, output.get(currLabel) + toAdd);
+		lastUsedReg = strA;
+		addLine("MOV " + strA + ", " + strB);
+	}
+	
+	private void addCMP(String strA,String strB) {
+		addLine("CMP " + strA + ", " + strB);
+	}
+	
+	private void addBEQ(String str) {
+		addLine("BEQ " + str);
+	}
+	
+	private void addB(String str) {
+		addLine("B " + str);
 	}
 	
 	private void addBL(String str) {
-		String toAdd = "\tBL " + str + "\n";
-		output.put(currLabel, output.get(currLabel) + toAdd);
+		addLine("BL " + str);
 	}
 
 	private void addSUB(String strA, String strB, String strC){
-		String toAdd = "\tSUB " + strA + ", " + strB + ", " + strC + "\n";
-		output.put(currLabel, output.get(currLabel) + toAdd);
+		addLine("SUB " + strA + ", " + strB + ", " + strC);
 	}
 	
 	private void addADD(String strA, String strB, String strC){
-		String toAdd = "\tADD " + strA + ", " + strB + ", " + strC + "\n";
-		output.put(currLabel, output.get(currLabel) + toAdd);
+		addLine("ADD " + strA + ", " + strB + ", " + strC );
 	}
 	
 	private void addLDRNE(String strA, String strB) {
-		String toAdd = "\tLDRNE " + strA + ", " + strB + "\n";
-		output.put(currLabel, output.get(currLabel) + toAdd);
+		addLine("LDRNE " + strA + ", " + strB);
 	}
 	
 	private void addLDREQ(String strA, String strB) {
-		String toAdd = "\tLDREQ " + strA + ", " + strB + "\n";
-		output.put(currLabel, output.get(currLabel) + toAdd);
+		addLine("LDREQ " + strA + ", " + strB);
 	}
 	
 	@Override
@@ -254,7 +292,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			addMOV(RESULT_REG, "#" + ctx.getParent().getChild(3).getText());
 			addSTRB(RESULT_REG, "[" + STACK_POINTER + "]");
 		} else if (ctx.getText().equals("string")) {
-			addLDR(RESULT_REG, "=" + "msg_" + stringLabelIndex);
+			addLDR(RESULT_REG, "=" + "msg_" + stringIndex);
 			addSTR(RESULT_REG, "[" + STACK_POINTER + "]");
 		}
 		addADD(STACK_POINTER, STACK_POINTER, size);
@@ -327,7 +365,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 
 	public void addPrint(ParseTree expr) {
-		prevLabel = currLabel;
+		String prevLabel = currLabel;
 		currLabel = "data";
 		
 		if (expr instanceof Int_literContext) {
@@ -474,7 +512,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		if (print[PrintType.STRING.ordinal()]) {
 			addNewLabel("p_print_string");
 			currLabel = "p_print_string";
-			addLabel("p_print_string");
 			
 			String reg2 = getFreeReg();
 			int reg2_n = Integer.parseInt(reg2.substring(1));
@@ -539,7 +576,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			addMOV(RESULT_REG, "#" + ctx.getParent().getChild(2).getText());
 			addSTRB(RESULT_REG, "[" + STACK_POINTER + "]");
 		} else if (type.equals("string")) {
-			addLDR(RESULT_REG, "=" + "msg_" + stringLabelIndex);
+			addLDR(RESULT_REG, "=" + "msg_" + stringIndex);
 			addSTR(RESULT_REG, "[" + STACK_POINTER + "]");
 		}
 		addADD(STACK_POINTER, STACK_POINTER, size);
@@ -561,13 +598,57 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		if (ctx.getChild(0).getText().equals("exit")) {
 			addLDR(RESULT_REG,ctx.getChild(1).getText());
 			addBL("exit");
-		}
-		else if (ctx.getChild(0).getText().equals("print") || ctx.getChild(0).getText().equals("println")) {
+		} else if (ctx.getChild(0).getText().equals("print") || ctx.getChild(0).getText().equals("println")) {
 			addPrint(ctx.getChild(1).getChild(0));
 			
 			if (ctx.getChild(0).getText().equals("println")) {
 				addPrintln();
-			}		}	
+			}
+		} else if(ctx.getChild(0).getText().equals("if")){
+			
+			visitExpr((ExprContext) ctx.getChild(1));
+			addCMP(lastUsedReg,"#0");
+			freeReg(lastUsedReg);
+			
+			String ifL = addNewLoopLabel();
+			addBEQ(ifL);
+			
+			String prevLabel = currLabel;
+			currLabel = ifL;
+			
+			visitStat((StatContext) ctx.getChild(3));
+			
+			currLabel = prevLabel;
+			visitStat((StatContext) ctx.getChild(5));
+			
+			String fiL = addNewLoopLabel();
+			addB(fiL);
+			
+			currLabel = fiL;
+			
+			return null;
+		} else if(ctx.getChild(0).getText().equals("while")){
+			
+			String bodyL  = addNewLoopLabel();
+			String whileL = addNewLoopLabel();
+			
+			addB(whileL);
+			
+			currLabel = bodyL;
+
+			visitStat((StatContext) ctx.getChild(3));
+			
+			currLabel = whileL;
+			
+			visitExpr((ExprContext) ctx.getChild(1));
+			
+			addCMP(lastUsedReg,"#0");
+			addBEQ(bodyL);
+
+			freeReg(lastUsedReg);
+			
+			return null;
+		}
 		/* 
 		
 		else if (ctx.getChild(0) instanceof BasicParser.StatContext) {
@@ -587,7 +668,11 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitBool_liter(Bool_literContext ctx) {
-		// TODO Auto-generated method stub
+		if(ctx.getText().equals("true")){
+			addMOV(getFreeReg(),"#1");
+		} else if(ctx.getText().equals("false")){
+			addMOV(getFreeReg(),"#0");
+		}
 		return super.visitBool_liter(ctx);
 	}
 
@@ -605,9 +690,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitProgram(ProgramContext ctx) {
-		addDirective("text");
-		addDirective("global main");
-		addLabel("main");
 		addPUSH("lr");
 		String ret = super.visitProgram(ctx);
 		addPOP("pc");
