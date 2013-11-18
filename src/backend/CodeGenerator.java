@@ -292,7 +292,13 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			addMOV(RESULT_REG, "#" + ctx.getParent().getChild(3).getText());
 			addSTRB(RESULT_REG, "[" + STACK_POINTER + "]");
 		} else if (ctx.getText().equals("string")) {
-			addLDR(RESULT_REG, "=" + "msg_" + stringIndex);
+			String s = ctx.getParent().getChild(3).getText();
+			addLDR(RESULT_REG, "=" + "msg_" + msgIndex);
+			currLabel = "data";
+			addLabel("msg_" + msgIndex++);
+			addLine(".word " + (s.length() - 2));
+			addLine(".ascii  " + s);
+			currLabel = "main";
 			addSTR(RESULT_REG, "[" + STACK_POINTER + "]");
 		}
 		addADD(STACK_POINTER, STACK_POINTER, size);
@@ -581,29 +587,37 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	
 	@Override
 	public String visitAssign_lhs(Assign_lhsContext ctx) {
-		String var = ctx.getChild(0).getText();
-		String type = variables.get(var);
-		totalSize = getSize(type);
-		String size = "#" + totalSize;
-		addSUB(STACK_POINTER, STACK_POINTER, size);
-		if (type.equals("int")) {
-			addLDR(RESULT_REG, "=" + ctx.getParent().getChild(2).getText());
-			addSTR(RESULT_REG, "[" + STACK_POINTER + "]");
-		} else if (type.equals("bool")) {
-			if (ctx.getParent().getChild(3).getText().equals("true")) {
-				addMOV(RESULT_REG, TRUE);
-			} else {
-				addMOV(RESULT_REG, FALSE);
+		if (ctx.getParent().getChild(1).getText().equals("=")) {
+			String var = ctx.getChild(0).getText();
+			String type = variables.get(var);
+			totalSize = getSize(type);
+			String size = "#" + totalSize;
+			addSUB(STACK_POINTER, STACK_POINTER, size);
+			if (type.equals("int")) {
+				addLDR(RESULT_REG, "=" + ctx.getParent().getChild(2).getText());
+				addSTR(RESULT_REG, "[" + STACK_POINTER + "]");
+			} else if (type.equals("bool")) {
+				if (ctx.getParent().getChild(3).getText().equals("true")) {
+					addMOV(RESULT_REG, TRUE);
+				} else {
+					addMOV(RESULT_REG, FALSE);
+				}
+				addSTRB(RESULT_REG, "[" + STACK_POINTER + "]");
+			} else if (type.equals("char")) {
+				addMOV(RESULT_REG, "#" + ctx.getParent().getChild(2).getText());
+				addSTRB(RESULT_REG, "[" + STACK_POINTER + "]");
+			} else if (type.equals("string")) {
+				String s = ctx.getParent().getChild(2).getText();
+				addLDR(RESULT_REG, "=" + "msg_" + msgIndex);
+				currLabel = "data";
+				addLabel("msg_" + msgIndex++);
+				addLine(".word " + (s.length() - 2));
+				addLine(".ascii  " + s);
+				currLabel = "main";
+				addSTR(RESULT_REG, "[" + STACK_POINTER + "]");
 			}
-			addSTRB(RESULT_REG, "[" + STACK_POINTER + "]");
-		} else if (type.equals("char")) {
-			addMOV(RESULT_REG, "#" + ctx.getParent().getChild(2).getText());
-			addSTRB(RESULT_REG, "[" + STACK_POINTER + "]");
-		} else if (type.equals("string")) {
-			addLDR(RESULT_REG, "=" + "msg_" + stringIndex);
-			addSTR(RESULT_REG, "[" + STACK_POINTER + "]");
+			addADD(STACK_POINTER, STACK_POINTER, size);
 		}
-		addADD(STACK_POINTER, STACK_POINTER, size);
 		//return null;
 		/*
 		if (ctx.getChild(0) instanceof BasicParser.IdentContext) {
@@ -693,9 +707,9 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	@Override
 	public String visitBool_liter(Bool_literContext ctx) {
 		if(ctx.getText().equals("true")){
-			addMOV(getFreeReg(),"#1");
+			addMOV(getFreeReg(),TRUE);
 		} else if(ctx.getText().equals("false")){
-			addMOV(getFreeReg(),"#0");
+			addMOV(getFreeReg(),FALSE);
 		}
 		return super.visitBool_liter(ctx);
 	}
