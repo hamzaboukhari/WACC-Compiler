@@ -229,17 +229,18 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitStr_liter(Str_literContext ctx) {
-		String s = ctx.getText();
+		return null;
+	}
+
+	public void addPrint(String s) {
 		prevLabel = currLabel;
 		currLabel = "data";
 		addLabel("msg_" + stringLabelIndex++);
 		addLine(".word " + (s.length() - 1));
 		addLine(".ascii  " + s);
 		currLabel = prevLabel;
-	
-		return null;
 	}
-
+	
 	@Override
 	public String visitAssign_lhs(Assign_lhsContext ctx) {
 		// TODO Auto-generated method stub
@@ -252,6 +253,10 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			addLDR(RESULT_REG,ctx.getChild(1).getText());
 			addBL("exit");
 		}
+		else if (ctx.getChild(0).getText().equals("print") || ctx.getChild(0).getText().equals("println")) {
+			addPrint(ctx.getChild(1).getText());
+		}	
+		
 		return super.visitStat(ctx);
 	}
 
