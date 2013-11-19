@@ -1,5 +1,5 @@
 package backend;
 
 public enum PrintType {
-	INT, BOOLEAN, CHAR, STRING, PAIR;
+	INT, BOOLEAN, NEWLINE, STRING, PAIR;
 }
