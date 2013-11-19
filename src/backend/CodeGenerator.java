@@ -598,6 +598,8 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 	
 	public void addPrintln() {
+		String prevLabel = currLabel;
+		
 		if (message[PrintType.NEWLINE.ordinal()]) {
 			// Add msg label
 			Message m = new Message("0", "");
@@ -605,7 +607,12 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			m.addLabel(msgLabels.size() - 1);
 			m.addLine(".word 1");
 			m.addLine(".ascii  \"\\0\"");
-			
+			message[PrintType.NEWLINE.ordinal()] = false;
+		}
+		
+		addBL("p_print_ln");
+		
+		if (print[PrintType.NEWLINE.ordinal()]) {
 			addNewLabel("p_print_ln");
 			currLabel = "p_print_ln";
 			
@@ -621,9 +628,11 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			addBL("fflush");
 			addPOP("pc");
 			
-			message[PrintType.NEWLINE.ordinal()] = false;
+			print[PrintType.NEWLINE.ordinal()] = false;
 			freeRegs[reg1_n] = true;
-		}			
+		}		
+		
+		currLabel = prevLabel;
 	}
 	
 	@Override
@@ -806,3 +815,4 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	
 	
 }
+
