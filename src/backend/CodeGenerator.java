@@ -667,7 +667,46 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 	
 	private void addPrint_Pair(Pair_literContext ctx) {
+		if (message[PrintType.PAIR.ordinal()]) {
+			Message m = new Message("p", "");
+			msgLabels.add(m);
+			m.addLabel(msgLabels.size() - 1);
+			
+			m.addLine(".word 3");
+			m.addLine(".ascii \"%p\\0\"");
+					
+			message[PrintType.PAIR.ordinal()] = false;
+		}
 		
+		String reg1 = getFreeReg();
+		int reg1_n = Integer.parseInt(reg1.substring(1));
+		
+		addMOV(reg1, "#0");
+		addBL("p_print_reference");
+		addMOV(reg1, "#0");
+
+		// Create p_print_reference function		
+		if (print[PrintType.REFERENCE.ordinal()]) {
+			addNewLabel("p_print_string");
+			currLabel = "p_print_string";
+			
+			String reg2 = getFreeReg();
+			int reg2_n = Integer.parseInt(reg2.substring(1));
+			
+			addPUSH("lr");
+			addMOV(reg2, reg1);
+			addLDR(reg1, "=msg_" + (msgLabels.size() - 1));
+			addADD(reg1, reg1, "#4");
+			addBL("printf");
+			addMOV(reg1, "#0");
+			addBL("fflush");
+			addPOP("pc");
+			
+			freeRegs[reg2_n] = true;
+			print[PrintType.REFERENCE.ordinal()] = false;			
+		}
+		
+		freeRegs[reg1_n] = true;		
 	}
 	
 	private void addPrint_Array(Array_literContext ctx) {
