@@ -348,11 +348,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitType(TypeContext ctx) {
-		//totalSPOffset = getSize(ctx.getText());
-		//String spOffset = "#" + totalSPOffset;
-		//addSUB(STACK_POINTER, STACK_POINTER, spOffset);
-		
-		String value = ctx.getParent().getChild(3).getText();
+	
 		String varName = ctx.getParent().getChild(1).getText();
 		String varType = ctx.getText();
 		
@@ -360,53 +356,35 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		
 		offset.add(new Offset(varName, totalOffset));
 		
+		int offsetVal = getOffset(varName);
+		
 		if (varType.equals("int")) {
 			
-			int offsetVal = getOffset(varName);
-			
-			addLDR(RESULT_REG, "=" + value);
-			addSTROffset(RESULT_REG, offsetVal);
-			
 			totalOffset += SIZE_INT;
+			
+			addSTROffset(RESULT_REG, offsetVal);
 				
 		} else if (varType.equals("bool")) {
 			
 			totalOffset += SIZE_BOOL;
 			
-			int offsetVal = getOffset(value);
-			
-			visitBool_liter((Bool_literContext) ctx.getParent().getChild(3).getChild(0).getChild(0));
 			addSTRBOffset(RESULT_REG, offsetVal);
 			
 		} else if (varType.equals("char")) {
 			
 			totalOffset += SIZE_CHAR;
-			
-			int offsetVal = getOffset(value);
-			
-			addMOV(RESULT_REG, "#" + value);
+				
 			addSTRBOffset(RESULT_REG, offsetVal);
 			
 		} else if (varType.equals("string")) {
 			
 			totalOffset += SIZE_STRING;
 			
-			int offsetVal = getOffset(value);
-		
-			addLDR(RESULT_REG, "=" + "msg_" + msgIndex);
-			
-			currLabel = "data";
-			addLabel("msg_" + msgIndex++);
-			addLine(".word " + (value.length() - 2));
-			addLine(".ascii  " + value);
-			currLabel = "main";
-			
 			addSTROffset(RESULT_REG, offsetVal);
 		}
 		
 		offset.add(new Offset(varName, totalOffset));
-		
-		//addADD(STACK_POINTER, STACK_POINTER, spOffset);
+
 		return null;
 	}
 
@@ -485,7 +463,16 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitStr_liter(Str_literContext ctx) {
-		return null;
+		
+		addLDR(RESULT_REG, "=" + "msg_" + msgIndex);
+		
+		currLabel = "data";
+		addLabel("msg_" + msgIndex++);
+		addLine(".word " + (ctx.getText().length() - 2));
+		addLine(".ascii  " + ctx.getText());
+		currLabel = "main";
+		
+		return super.visitStr_liter(ctx);
 	}
 
 	public void addPrint(ParseTree expr) {
@@ -734,88 +721,68 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	public String visitAssign_lhs(Assign_lhsContext ctx) {
 		if (ctx.getParent().getChild(1).getText().equals("=")) {
 			// Assignment
-			
-			String value = ctx.getParent().getChild(2).getText();
+
 			String varName = ctx.getChild(0).getText();
 			String varType = variables.get(varName);
-			//totalSPOffset = getSize(varType);
-			//String spOffset = "#" + totalSPOffset;
-			
-			//addSUB(STACK_POINTER, STACK_POINTER, spOffset);
 			
 			int offsetVal = getOffset(varName);
 			
 			if (varType.equals("int")) {
 				
-				addLDR(RESULT_REG, "=" + value);
 				addSTROffset(RESULT_REG, offsetVal);
 				
 			} else if (varType.equals("bool")) {
 				
-				//visitBool_liter((Bool_literContext) ctx.getParent().getChild(2).getChild(0).getChild(0));
-				
-				if (ctx.getParent().getChild(2).getText().equals("true")) {
-					addMOV(RESULT_REG, TRUE);
-				} else {
-					addMOV(RESULT_REG, FALSE);
-				}
-				
 				addSTRBOffset(RESULT_REG, offsetVal);
 				
 			} else if (varType.equals("char")) {
-				
-				addMOV(RESULT_REG, "#" + value);
+			
 				addSTRBOffset(RESULT_REG, offsetVal);
 				
 			} else if (varType.equals("string")) {
-				
-				addLDR(RESULT_REG, "=" + "msg_" + msgIndex);
-				
-				currLabel = "data";
-				addLabel("msg_" + msgIndex++);
-				addLine(".word " + (value.length() - 2));
-				addLine(".ascii  " + value);
-				currLabel = "main";
 				
 				addSTROffset(RESULT_REG, offsetVal);
 				
 			}
 			
-			//addADD(STACK_POINTER, STACK_POINTER, spOffset);
 		}
-		//return null;
-		/*
-		if (ctx.getChild(0) instanceof BasicParser.IdentContext) {
-			visitIdent((IdentContext) ctx.getChild(0));
-		} else if (ctx.getChild(0) instanceof BasicParser.ExprContext) {
-			visitExpr((ExprContext) ctx.getChild(0));
-		} else {
-			visitPair_elem_type((Pair_elem_typeContext) ctx.getChild(0));
-		}
-		*/
+
 		return super.visitAssign_lhs(ctx);
 	}
 
 	@Override
 	public String visitStat(StatContext ctx) {
-		/*if (ctx.getChild(0) instanceof BasicParser.TypeContext) {
-		
-		//addSUB(STACK_POINTER, STACK_POINTER, "#" + totalSPOffset);
-		visitType((TypeContext) ctx.getChild(0));
-		//addADD(STACK_POINTER, STACK_POINTER, "#" + totalSPOffset);
-		
-		return null;
-		
-	} else*/
-		if (ctx.getChild(0).getText().equals("exit")) {
+		if (ctx.getChildCount() > 2) {
+			
+			if (ctx.getChild(2).getText().equals("=")) {
+				// Found declaration
+				
+				visitAssign_rhs((Assign_rhsContext) ctx.getChild(3));
+				visitType((TypeContext) ctx.getChild(0));
+				
+				return null;
+				
+			} else if (ctx.getChild(1).getText().equals("=")) {
+				// Found assignment
+				
+				visitAssign_rhs((Assign_rhsContext) ctx.getChild(2));
+				visitAssign_lhs((Assign_lhsContext) ctx.getChild(0));
+				
+				return null;
+			}
+		} else if (ctx.getChild(0).getText().equals("exit")) {
+			
 			addLDR(RESULT_REG,ctx.getChild(1).getText());
 			addBL("exit");
+			
 		} else if (ctx.getChild(0).getText().equals("print") || ctx.getChild(0).getText().equals("println")) {
+			
 			addPrint(ctx.getChild(1).getChild(0));
 			
 			if (ctx.getChild(0).getText().equals("println")) {
 				addPrintln();
 			}
+			
 		} else if(ctx.getChild(0).getText().equals("if")){
 			
 			visitExpr((ExprContext) ctx.getChild(1));
@@ -860,35 +827,22 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			freeReg(lastUsedReg);
 			
 			return null;
-		}/* 
-		else if (ctx.getChild(0) instanceof BasicParser.StatContext) {
-		
-		for (int i = 0 ; i < ctx.getChildCount() ; i++) {
-			
-			if (ctx.getChild(i).getChild(0).getChild(0) instanceof BasicParser.TypeContext) {
-				
-				totalSPOffset += getSize(ctx.getChild(i).getChild(0).getText());
-				System.out.println(totalSPOffset);
-			}
 		}
-		//System.out.println(totalSPOffset);
-		if (totalSPOffset != 0 ) { 	
-			addSUB(STACK_POINTER, STACK_POINTER, "#" + totalSPOffset);
-			super.visitStat(ctx);
-			addADD(STACK_POINTER, STACK_POINTER, "#" + totalSPOffset);
-			return null;
-		} 
-	} */
-
+		
 		return super.visitStat(ctx);
 	}
 
 	@Override
 	public String visitBool_liter(Bool_literContext ctx) {
+		
 		if(ctx.getText().equals("true")){
-			addMOV(getFreeReg(), TRUE);
+			
+			addMOV(RESULT_REG, TRUE);
+			
 		} else if(ctx.getText().equals("false")){
-			addMOV(getFreeReg(), FALSE);
+			
+			addMOV(RESULT_REG, FALSE);
+			
 		}
 		return super.visitBool_liter(ctx);
 	}
@@ -935,7 +889,9 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitChar_liter(Char_literContext ctx) {
-		// TODO Auto-generated method stub
+		
+		addMOV(RESULT_REG, "#" + ctx.getText());
+		
 		return super.visitChar_liter(ctx);
 	}
 
@@ -953,7 +909,9 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitInt_liter(Int_literContext ctx) {
-		// TODO Auto-generated method stub
+		
+		addLDR(RESULT_REG, "=" + ctx.getText());
+		
 		return super.visitInt_liter(ctx);
 	}
 	
