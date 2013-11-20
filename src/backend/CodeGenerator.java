@@ -50,7 +50,8 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	private String currLabel;
 
 	private boolean[] freeRegs;
-	private String lastUsedReg;
+	private String prevReg;
+	private String currReg;
 	
 	private int loopIndex;
 	private int msgIndex;
@@ -211,6 +212,8 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			}
 		}
 		
+		prevReg = currReg;
+		currReg = "r" + (freeReg);
 		return "r" + (freeReg);
 	}
 	
@@ -295,7 +298,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 	
 	private void addMOV(String strA,String strB) {
-		lastUsedReg = strA;
 		addLine("MOV " + strA + ", " + strB);
 	}
 	
@@ -345,7 +347,16 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitExpr(ExprContext ctx) {
-		// TODO Auto-generated method stub
+		
+		if(ctx.getChildCount() > 2 && ctx.getChild(1) instanceof Binary_operContext){
+			System.out.println("TODO");
+			
+			visitExpr((ExprContext) ctx.getChild(0));
+			visitExpr((ExprContext) ctx.getChild(2));
+			
+			return null;
+		}
+		
 		return super.visitExpr(ctx);
 	}
 
@@ -822,8 +833,8 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		} else if(ctx.getChild(0).getText().equals("if")){
 			
 			visitExpr((ExprContext) ctx.getChild(1));
-			addCMP(lastUsedReg,"#0");
-			freeReg(lastUsedReg);
+			addCMP(currReg,"#0");
+			freeReg(currReg);
 			
 			String ifL = addNewLoopLabel();
 			addBEQ(ifL);
@@ -857,10 +868,10 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			
 			visitExpr((ExprContext) ctx.getChild(1));
 			
-			addCMP(lastUsedReg,"#0");
+			addCMP(currReg,"#0");
 			addBEQ(bodyL);
 
-			freeReg(lastUsedReg);
+			//freeReg(currReg);
 			
 			return null;
 		}
