@@ -105,9 +105,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	private void setOutput(){
 		output.put("data", ".data\n");
 		output.put("main", "");
-		addDirective("text");
-		addDirective("global main");
-		addLabel("main");
 	}
 	
 	private void addNewLabel(String label) {
@@ -136,6 +133,9 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			res += msgLabels.get(i).getVal();
 		}
 		
+		res += ".text\n";
+		res += ".global main\n";
+		res += "main:\n";
 		res += output.get("main");
 		
 		Set<String> labels = output.keySet();
@@ -158,8 +158,12 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 	
 	private void freeReg(String reg) {
-		int r = ((int) reg.charAt(1)) - 48;
-		freeRegs[r] = true;
+		if(reg.length() == 2){
+			reg = reg.substring(1);
+		} else {
+			reg = reg.substring(1,3);
+		}
+		freeRegs[Integer.parseInt(reg)] = true;
 	}
 	
 	private boolean findMsgLabel(String label) {
@@ -219,6 +223,20 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			}
 		}
 		return -1;
+	}
+	
+	private void addToFront(String str){
+		output.put(currLabel, str + "\n" + output.get(currLabel));
+	}
+	private void addLineToFront(String str) {
+		addToFront("\t" + str);
+	}
+	private void addPUSHToFront(String str) {
+		addLineToFront("PUSH {" + str + "}");
+	}
+
+	private void addSUBToFront(String strA, String strB, String strC){
+		addLineToFront("SUB " + strA + ", " + strB + ", " + strC);
 	}
 	
 	private void add(String str){
@@ -418,8 +436,21 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitFunc(FuncContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitFunc(ctx);
+		
+		String funcL = ctx.getChild(1).getText();
+		addNewLabel(funcL);
+		
+		String prevLabel = currLabel;
+		currLabel = funcL;
+		
+		addPUSH("lr");
+		String ret = super.visitFunc(ctx);
+		addPOP("pc");
+		addPOP("pc");
+		addLine(".ltorg");
+		
+		currLabel = prevLabel;
+		return ret;
 	}
 
 	@Override
@@ -712,7 +743,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			
 			//addSUB(STACK_POINTER, STACK_POINTER, spOffset);
 			
-			int offsetVal = getOffset(value);
+			int offsetVal = getOffset(varName);
 			
 			if (varType.equals("int")) {
 				
@@ -876,10 +907,15 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitProgram(ProgramContext ctx) {
-		addPUSH("lr");
-		addSUB(STACK_POINTER, STACK_POINTER, "#" + totalOffset);
 		String ret = super.visitProgram(ctx);
-		addADD(STACK_POINTER, STACK_POINTER, "#" + totalOffset);
+		
+		String prevLabel = currLabel;
+		currLabel = "main";
+		if(totalOffset>0){addSUBToFront(STACK_POINTER, STACK_POINTER, "#" + totalOffset);}
+		addPUSHToFront("lr");
+		
+		currLabel = prevLabel;
+		if(totalOffset>0){addADD(STACK_POINTER, STACK_POINTER, "#" + totalOffset);}
 		addMOV(RESULT_REG, "#0");
 		addPOP("pc");
 		return ret;
