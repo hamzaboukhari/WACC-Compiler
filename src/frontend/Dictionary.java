@@ -4,19 +4,19 @@ import java.util.HashMap;
 import java.util.Map;
 import identifier_objects.Identifier;
 
-public class Dictionary {
+public class Dictionary<T> {
 	
-	Map<String, Identifier> dictionary;
+	Map<String, T> dictionary;
 	
 	Dictionary() {
-		dictionary = new HashMap<String, Identifier>();
+		dictionary = new HashMap<String, T>();
 	}
 	
-	void add(String name, Identifier obj) {
+	void add(String name, T obj) {
 		dictionary.put(name, obj);
 	}
 	
-	Identifier get(String name) {
+	T get(String name) {
 		return dictionary.get(name);
 	}
 	

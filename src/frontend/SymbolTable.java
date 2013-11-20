@@ -1,29 +1,27 @@
 package frontend;
 
-import identifier_objects.Identifier;
-
-public class SymbolTable {
+public class SymbolTable<T> {
 	
-	private SymbolTable encSymTable;
-	private Dictionary dict;
+	private SymbolTable<T> encSymTable;
+	private Dictionary<T> dict;
 	
-	public SymbolTable(SymbolTable st) {
-		dict = new Dictionary();
+	public SymbolTable(SymbolTable<T> st) {
+		dict = new Dictionary<T>();
 		encSymTable = st;
 	}
 	
-	public void add(String name, Identifier obj) {
+	public void add(String name, T obj) {
 		dict.add(name, obj);
 	}
 	
-	public Identifier lookupCurrLevelOnly(String name) {
+	public T lookupCurrLevelOnly(String name) {
 		return dict.get(name);
 	}
 	
-	public Identifier lookUpCurrLevelAndEnclosingLevels(String name) {
-		SymbolTable S = this;
+	public T lookUpCurrLevelAndEnclosingLevels(String name) {
+		SymbolTable<T> S = this;
 		while (S != null) {
-			Identifier obj = S.lookupCurrLevelOnly(name);
+			T obj = S.lookupCurrLevelOnly(name);
 			if (obj != null) {
 				return obj;
 			}
@@ -32,7 +30,7 @@ public class SymbolTable {
 		return null;
 	}
 	
-	public SymbolTable getParent(){
+	public SymbolTable<T> getParent(){
 		return encSymTable;
 	}
 	

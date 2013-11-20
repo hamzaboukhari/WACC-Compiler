@@ -9,6 +9,8 @@ import java.util.Set;
 
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import frontend.SymbolTable;
+
 import antlr.BasicParser.Arg_listContext;
 import antlr.BasicParser.Array_literContext;
 import antlr.BasicParser.Array_typeContext;
@@ -41,11 +43,10 @@ import antlr.BasicParser.ProgContext;
 public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	
 	private ProgContext tree;
+	private SymbolTable<Variable> st;
 	
 	private Map<String, String> output;
-	private Map<String, String> variables;
 	private List<Message> msgLabels;
-	private List<Offset> offset;
 	private String currLabel;
 
 	private boolean[] freeRegs;
@@ -75,10 +76,9 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	
 	public CodeGenerator(ProgContext t) {
 		tree = t;
+		st = new SymbolTable<Variable>(null);
 		output = new HashMap<String,String>();
-		variables = new HashMap<String, String>();
 		msgLabels = new LinkedList<Message>();
-		offset = new LinkedList<Offset>();
 		currLabel = "main";
 		setOutput();
 		setRegs();
@@ -93,6 +93,18 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			message[i] = true;
 			print[i] = true;
 		}
+	}
+	
+	private Variable getVariable(String varName){
+		return st.lookUpCurrLevelAndEnclosingLevels(varName);
+	}
+	
+	public int getOffset(String var) {
+		return getVariable(var).getOffset();
+	}
+	
+	public String getType(String var) {
+		return getVariable(var).getType();
 	}
 	
 	private void setRegs() {
@@ -214,15 +226,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		} else {
 			return 0;
 		}
-	}
-	
-	public int getOffset(String var) {
-		for (int i = 0; i < offset.size(); i++) {
-			if (offset.get(i).getKey().equals(var)) {
-				return offset.get(i).getVal();
-			}
-		}
-		return -1;
 	}
 	
 	private void addToFront(String str){
@@ -352,11 +355,9 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		String varName = ctx.getParent().getChild(1).getText();
 		String varType = ctx.getText();
 		
-		variables.put(varName, varType);
+		int offsetVal = totalOffset;
 		
-		offset.add(new Offset(varName, totalOffset));
-		
-		int offsetVal = getOffset(varName);
+		st.add(varName, new Variable(varType, offsetVal));
 		
 		if (varType.equals("int")) {
 			
@@ -383,9 +384,8 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			addSTROffset(RESULT_REG, offsetVal);
 		}
 		
-		offset.add(new Offset(varName, totalOffset));
+		return super.visitType(ctx);
 
-		return null;
 	}
 
 	@Override
@@ -464,13 +464,11 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	@Override
 	public String visitStr_liter(Str_literContext ctx) {
 		
-		addLDR(RESULT_REG, "=" + "msg_" + msgIndex);
-		
-		currLabel = "data";
-		addLabel("msg_" + msgIndex++);
-		addLine(".word " + (ctx.getText().length() - 2));
-		addLine(".ascii  " + ctx.getText());
-		currLabel = "main";
+		Message m = new Message(ctx.getText(), ""); 
+		msgLabels.add(m); m.addLabel(msgLabels.size() - 1); 
+		m.addLine(".word " + ctx.getText().length());
+		m.addLine(".ascii " + ctx.getText()); 
+		addLDR(RESULT_REG, "=" + "msg_" + (msgLabels.size() - 1)); 
 		
 		return super.visitStr_liter(ctx);
 	}
@@ -762,7 +760,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			// Assignment
 
 			String varName = ctx.getChild(0).getText();
-			String varType = variables.get(varName);
+			String varType = getType(varName);
 			
 			int offsetVal = getOffset(varName);
 			
@@ -791,24 +789,23 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitStat(StatContext ctx) {
-		if (ctx.getChildCount() > 2) {
+		
+		if (ctx.getChildCount() > 2 && ctx.getChild(2).getText().equals("=")) {
+			// Found declaration
 			
-			if (ctx.getChild(2).getText().equals("=")) {
-				// Found declaration
+			visitAssign_rhs((Assign_rhsContext) ctx.getChild(3));
+			visitType((TypeContext) ctx.getChild(0));
+			
+			return null;
 				
-				visitAssign_rhs((Assign_rhsContext) ctx.getChild(3));
-				visitType((TypeContext) ctx.getChild(0));
+		} else if (ctx.getChildCount() > 2 && ctx.getChild(1).getText().equals("=")) {
+			// Found assignment
+			
+			visitAssign_rhs((Assign_rhsContext) ctx.getChild(2));
+			visitAssign_lhs((Assign_lhsContext) ctx.getChild(0));
+			
+			return null;
 				
-				return null;
-				
-			} else if (ctx.getChild(1).getText().equals("=")) {
-				// Found assignment
-				
-				visitAssign_rhs((Assign_rhsContext) ctx.getChild(2));
-				visitAssign_lhs((Assign_lhsContext) ctx.getChild(0));
-				
-				return null;
-			}
 		} else if (ctx.getChild(0).getText().equals("exit")) {
 			
 			addLDR(RESULT_REG,ctx.getChild(1).getText());

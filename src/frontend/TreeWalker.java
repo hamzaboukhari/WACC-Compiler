@@ -24,7 +24,7 @@ import antlr.BasicParserBaseVisitor;
 public class TreeWalker extends BasicParserBaseVisitor<Type>{
 
 	private ProgContext tree;
-	private SymbolTable st;
+	private SymbolTable<Identifier> st;
 	private String currFunc;
 
 	public TreeWalker(ProgContext t){
