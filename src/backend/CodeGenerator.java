@@ -307,7 +307,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		addLine("LDR " + strA + ", " + strB);
 	}
 	
-	private void addLDROffset(String str,int offset) {
+	private void addLDROffset(String str, int offset) {
 		if (offset == 0) {
 			addLine("LDR " + str + ", [" + STACK_POINTER + "]");
 		} else {
@@ -319,7 +319,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		addLine("STR " + strA + ", " + strB);
 	}
 	
-	private void addSTROffset(String str,int offset) {
+	private void addSTROffset(String str, int offset) {
 		if (offset == 0) {
 			addLine("STR " + str + ", [" + STACK_POINTER + "]");
 		} else {
@@ -327,15 +327,23 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		}
 	}
 	
-	private void addSTRB(String strA,String strB) {
+	private void addSTRB(String strA, String strB) {
 		addLine("STRB " + strA + ", " + strB);
 	}
 	
-	private void addSTRBOffset(String str,int offset) {
+	private void addSTRBOffset(String str, int offset) {
 		if (offset == 0) {
 			addLine("STRB " + str + ", [" + STACK_POINTER + "]");
 		} else {
 			addLine("STRB " + str + ", [" + STACK_POINTER + ", " +  "#" + offset + "]");
+		}
+	}
+	
+	private void addLDRSBOffset(String str, int offset) {
+		if (offset == 0) {
+			addLine("LDRSB " + str + ", [" + STACK_POINTER + "]");
+		} else {
+			addLine("LDRSB " + str + ", [" + STACK_POINTER + ", " +  "#" + offset + "]");
 		}
 	}
 	
@@ -533,7 +541,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitStr_liter(Str_literContext ctx) {
-		
+
 		Message m = new Message(ctx.getText(), ""); 
 		msgLabels.add(m); m.addLabel(msgLabels.size() - 1); 
 		m.addLine(".word " + ctx.getText().length());
@@ -573,65 +581,25 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	
 	private void addPrint_Int(Int_literContext ctx) {
 		if (message[PrintType.INT.ordinal()]) {
-			Message m = new Message("%d", "");
-			msgLabels.add(m);
-			m.addLabel(msgLabels.size() - 1);
-			m.addLine(".word 3");
-			m.addLine(".ascii  \"%d\\0\"");
-			message[PrintType.INT.ordinal()] = false;
+			addMsg_int();
 		}
-				
+		
 		String reg1 = getFreeReg();
-		int reg1_n = Integer.parseInt(reg1.substring(1));
 		
 		addLDR(reg1, "=" + ctx.getText());
 		addBL("p_print_int");
 		
 		if (print[PrintType.INT.ordinal()]) {
-			String reg2 = getFreeReg();
-			int reg2_n = Integer.parseInt(reg2.substring(1));
-
-			// Create print function
-			addNewLabel("p_print_int");
-			currLabel = "p_print_int";
-			addPUSH("lr");
-			addMOV(reg2, reg1);
-			addLDR(reg1, "msg_" + (msgLabels.size() - 1));
-			addADD(reg1, reg1, "#4");
-			addBL("printf");
-			addMOV(reg1, "#0");
-			addBL("fflush");
-			addPOP("pc");
-			
-			// Free registers
-			freeRegs[reg2_n] = true;
-			
-			print[PrintType.INT.ordinal()] = false;
+			addPrint_p_print_int(reg1);
 		}
-		
-		freeRegs[reg1_n] = true;
 	}
 	
 	private void addPrint_Bool(Bool_literContext ctx) {
-		if (message[PrintType.BOOLEAN.ordinal()]) {
-			// Add boolean message labels
-			Message m1 = new Message("true", "");
-			msgLabels.add(m1);
-			m1.addLabel(msgLabels.size() - 1);
-			m1.addLine(".word 5");
-			m1.addLine(".ascii  \"true\\0\"");
-			
-			Message m2 = new Message("false", "");
-			msgLabels.add(m2);
-			m2.addLabel(msgLabels.size() - 1);
-			m2.addLine(".word 6");
-			m2.addLine(".ascii  \"false\\0\"");
-			
-			message[PrintType.BOOLEAN.ordinal()] = false;
+		if (message[PrintType.BOOL.ordinal()]) {
+			addMsg_bool();
 		}
 		
 		String reg1 = getFreeReg();
-		int reg1_n = Integer.parseInt(reg1.substring(1));
 
 		if (ctx.getText().equals("true")) {
 			addMOV(reg1, "#1");
@@ -643,30 +611,14 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		
 		addMOV(reg1, "#0");	
 
-		if (print[PrintType.BOOLEAN.ordinal()]) {
-			addNewLabel("p_print_bool");
-			currLabel = "p_print_bool";
-			addPUSH("lr");
-			addCMP(reg1, "#0");
-			addLDRNE(reg1, "=msg_" + (msgLabels.size() - 2));
-			addLDREQ(reg1, "=msg_" + (msgLabels.size() - 1));
-			addADD(reg1, reg1, "#4");
-			addBL("printf");
-			addMOV(reg1, "#0");
-			addBL("fflush");
-			addPOP("pc");
-			
-			print[PrintType.BOOLEAN.ordinal()] = false;
+		if (print[PrintType.BOOL.ordinal()]) {
+			addPrint_p_print_bool(reg1);
 		}
-		
-		freeRegs[reg1_n] = true;
 	}
 	
 	private void addPrint_Char(Char_literContext ctx) {
-		
 		String reg1 = getFreeReg();
 		int reg1_n = Integer.parseInt(reg1.substring(1));
-		currLabel = "main";
 		
 		addMOV(reg1, "#" + ctx.getText());
 		addBL("putchar");
@@ -677,15 +629,10 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	
 	private void addPrint_String(Str_literContext ctx) {
 		if (message[PrintType.STRING.ordinal()]) {
-			Message m = new Message("s", "");
-			msgLabels.add(m);
-			m.addLabel(msgLabels.size() - 1);
-			
-			m.addLine(".word 5");
-			m.addLine(".ascii  \"%.*s\0\"");
-					
-			message[PrintType.STRING.ordinal()] = false;
+			addMsg_string();
 		}
+		
+		String reg1 = getFreeReg();
 		
 		// Add msg label
 		String s = ctx.getText();
@@ -695,10 +642,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		m.addLabel(msgLabels.size() - 1);
 		m.addLine(".word " + (s.length() - 2));
 		m.addLine(".ascii  " + s);
-		
-		// Get register
-		String reg1 = getFreeReg();
-		int reg1_n = Integer.parseInt(reg1.substring(1));
 
 		// Add main instructions
 		addLDR(reg1, "=msg_" + (msgLabels.size() - 1));
@@ -706,32 +649,8 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		
 		// Add print function
 		if (print[PrintType.STRING.ordinal()]) {
-			addNewLabel("p_print_string");
-			currLabel = "p_print_string";
-			
-			String reg2 = getFreeReg();
-			int reg2_n = Integer.parseInt(reg2.substring(1));
-			String reg3 = getFreeReg();
-			int reg3_n = Integer.parseInt(reg2.substring(1));
-			
-			addPUSH("lr");
-			addLDR(reg2, "[" + reg1 + "]");
-			addADD(reg3, reg1, "#4");
-			addLDR(reg1, "=msg_" + (msgLabels.size() - 2));
-			addADD(reg1, reg1, "#4");
-			addBL("printf");
-			addMOV(reg1, "#0");
-			addBL("fflush");
-			addPOP("pc");
-			
-			// Free registers
-			freeRegs[reg2_n] = true;		
-			freeRegs[reg3_n] = true;		
-			
-			print[PrintType.STRING.ordinal()] = false;
+			addPrint_p_print_string(reg1);
 		}
-		
-		freeRegs[reg1_n] = true;		
 	}
 	
 	private void addPrint_Pair(Pair_literContext ctx) {
@@ -786,12 +705,154 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		String type = getType(ident);
 		int offset = getOffset(ident);
 		
-		if (type.equals("string")) {
-			if (offset == 0) {
-				addLDR("r0", "[sp]");
-				addBL("p_print_string");
+		addLDROffset(RESULT_REG, offset);
+		
+		if (type.equals("int")) {
+			addLDROffset(RESULT_REG, offset);
+			addBL("p_print_int");
+			
+			if (message[PrintType.INT.ordinal()]) {
+				addMsg_int();
+			}
+			
+			if (print[PrintType.INT.ordinal()]) {
+				addPrint_p_print_int(RESULT_REG);
+			}			
+		}
+		else if (type.equals("bool")) {
+			addLDRSBOffset(RESULT_REG, offset);
+			addBL("p_print_bool");
+			
+			if (message[PrintType.BOOL.ordinal()]) {
+				addMsg_bool();
+			}
+
+			if (print[PrintType.BOOL.ordinal()]) {
+				addPrint_p_print_bool(RESULT_REG);
 			}
 		}
+		else if (type.equals("char")) {
+			addLDRSBOffset(RESULT_REG, offset);
+		    addBL("putchar");
+		}
+		else if (type.equals("string")) {
+			addLDROffset(RESULT_REG, offset);
+			addBL("p_print_string");
+			
+			if (message[PrintType.STRING.ordinal()]) {
+				addMsg_string();
+			}
+			
+			if (print[PrintType.STRING.ordinal()]) {
+				addPrint_p_print_string(RESULT_REG);
+			}
+		}
+	}
+	
+	private void addMsg_string() {
+		Message m = new Message("s", "");
+		msgLabels.add(m);
+		m.addLabel(msgLabels.size() - 1);
+		
+		m.addLine(".word 5");
+		m.addLine(".ascii  \"%.*s\0\"");
+				
+		message[PrintType.STRING.ordinal()] = false;
+	}
+	
+	private void addMsg_int() {
+		Message m = new Message("%d", "");
+		msgLabels.add(m);
+		m.addLabel(msgLabels.size() - 1);
+		m.addLine(".word 3");
+		m.addLine(".ascii  \"%d\\0\"");
+		message[PrintType.INT.ordinal()] = false;
+	}
+	
+	private void addMsg_bool() {
+		Message m1 = new Message("true", "");
+		msgLabels.add(m1);
+		m1.addLabel(msgLabels.size() - 1);
+		m1.addLine(".word 5");
+		m1.addLine(".ascii  \"true\\0\"");
+		
+		Message m2 = new Message("false", "");
+		msgLabels.add(m2);
+		m2.addLabel(msgLabels.size() - 1);
+		m2.addLine(".word 6");
+		m2.addLine(".ascii  \"false\\0\"");
+		
+		message[PrintType.BOOL.ordinal()] = false;
+	}
+	
+	private void addPrint_p_print_int(String reg1) {
+		int reg1_n = Integer.parseInt(reg1.substring(1));			
+		String reg2 = getFreeReg();
+		int reg2_n = Integer.parseInt(reg2.substring(1));
+
+		// Create print function
+		addNewLabel("p_print_int");
+		currLabel = "p_print_int";
+		addPUSH("lr");
+		addMOV(reg2, reg1);
+		addLDR(reg1, "msg_" + (msgLabels.size() - 1));
+		addADD(reg1, reg1, "#4");
+		addBL("printf");
+		addMOV(reg1, "#0");
+		addBL("fflush");
+		addPOP("pc");
+		
+		// Free registers
+		freeRegs[reg1_n] = true;
+		freeRegs[reg2_n] = true;
+		
+		print[PrintType.INT.ordinal()] = false;
+	}
+
+	private void addPrint_p_print_bool(String reg1) {
+		addNewLabel("p_print_bool");
+		currLabel = "p_print_bool";
+		addPUSH("lr");
+		addCMP(reg1, "#0");
+		addLDRNE(reg1, "=msg_" + (msgLabels.size() - 2));
+		addLDREQ(reg1, "=msg_" + (msgLabels.size() - 1));
+		addADD(reg1, reg1, "#4");
+		addBL("printf");
+		addMOV(reg1, "#0");
+		addBL("fflush");
+		addPOP("pc");
+
+		print[PrintType.BOOL.ordinal()] = false;
+	}
+	
+	private void addPrint_p_print_string(String reg1) {
+		addNewLabel("p_print_string");
+		currLabel = "p_print_string";
+		
+		// Get registers
+		int reg1_n = Integer.parseInt(reg1.substring(1));
+		String reg2 = getFreeReg();
+		int reg2_n = Integer.parseInt(reg2.substring(1));
+		String reg3 = getFreeReg();
+		int reg3_n = Integer.parseInt(reg2.substring(1));
+		
+		// Generate instrutions		
+		addPUSH("lr");
+		addLDR(reg2, "[" + reg1 + "]");
+		addADD(reg3, reg1, "#4");
+		addLDR(reg1, "=msg_" + (msgLabels.size() - 2));
+		addADD(reg1, reg1, "#4");
+		addBL("printf");
+		addMOV(reg1, "#0");
+		addBL("fflush");
+		addPOP("pc");
+		
+		// Free registers
+		freeRegs[reg1_n] = true;		
+		freeRegs[reg2_n] = true;		
+		freeRegs[reg3_n] = true;		
+		
+		print[PrintType.STRING.ordinal()] = false;
 	}
 	
 	public void addPrintln() {
@@ -836,30 +897,23 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	public String visitAssign_lhs(Assign_lhsContext ctx) {
 		if (ctx.getParent().getChild(1).getText().equals("=")) {
 			// Assignment
-
 			String varName = ctx.getChild(0).getText();
 			String varType = getType(varName);
 			
 			int offsetVal = getOffset(varName);
 			
-			if (varType.equals("int")) {
-				
+			if (varType.equals("int")) {				
 				addSTROffset(RESULT_REG, offsetVal);
-				
-			} else if (varType.equals("bool")) {
-				
-				addSTRBOffset(RESULT_REG, offsetVal);
-				
-			} else if (varType.equals("char")) {
-			
-				addSTRBOffset(RESULT_REG, offsetVal);
-				
-			} else if (varType.equals("string")) {
-				
-				addSTROffset(RESULT_REG, offsetVal);
-				
 			}
-			
+			else if (varType.equals("bool")) {				
+				addSTRBOffset(RESULT_REG, offsetVal);
+			}
+			else if (varType.equals("char")) {
+				addSTRBOffset(RESULT_REG, offsetVal);
+			}
+			else if (varType.equals("string")) {
+				addSTROffset(RESULT_REG, offsetVal);
+			}
 		}
 
 		return super.visitAssign_lhs(ctx);
@@ -1043,8 +1097,5 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		
 		return super.visitInt_liter(ctx);
 	}
-	
-	
-	
 }
 

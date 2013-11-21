@@ -4,7 +4,6 @@ import java.io.IOException;
 import org.antlr.v4.runtime.ANTLRFileStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.tree.ParseTree;
 
 import backend.CodeGenerator;
 
@@ -16,9 +15,8 @@ public class Main {
 	
 	public static void main(String[] args) throws IOException{
 		// Get file name
-		//String file = args[0];
+
 		String file = "../wacc_examples/valid/print/printBool.wacc";
-		//System.out.println("File: " + file);
 		
 		// Read in file
 		CharStream cs = new ANTLRFileStream(file);
