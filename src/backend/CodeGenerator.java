@@ -56,7 +56,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	private int loopIndex;
 	private int msgIndex;
 	
-	private int totalOffset;
+	//private int totalOffset;
 
 	private boolean[] message;
 	private boolean[] print;
@@ -96,12 +96,46 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		}
 	}
 	
+	public void initScope(ParseTree t) {
+		
+		st = new SymbolTable<Variable>(st);
+		
+		SizeCalc sizeCalc = new SizeCalc();
+		
+		int totalOffset = sizeCalc.getSize(t);
+		
+		st.add("totalOffset", new Variable(null, totalOffset));
+		
+		st.add("varOffset", new Variable(null, 0));
+		
+		if(totalOffset>0){addSUB(STACK_POINTER, STACK_POINTER, "#" + totalOffset);}
+		
+	}
+	
+	public void endScope() {
+		
+		int totalOffset = st.lookupCurrLevelOnly("totalOffset").getOffset();
+		
+		if(totalOffset>0){addADD(STACK_POINTER, STACK_POINTER, "#" + totalOffset);}
+		
+		st = st.getParent();
+		
+	}
+	
 	private Variable getVariable(String varName){
 		return st.lookUpCurrLevelAndEnclosingLevels(varName);
 	}
 	
 	public int getOffset(String var) {
 		return getVariable(var).getOffset();
+	}
+	
+	private int getSPLocation() {
+		return st.lookupCurrLevelOnly("totalOffset").getOffset() - st.lookupCurrLevelOnly("varOffset").getOffset();
+	}
+	
+	private void incrementVarOffset(int size) {
+		st.add("varOffset", new Variable(null, st.lookupCurrLevelOnly("varOffset").getOffset() + size));
 	}
 	
 	public String getType(String var) {
@@ -171,12 +205,12 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 	
 	private void freeReg(String reg) {
-		if(reg.length() == 2){
+	/*	if(reg.length() == 2){
 			reg = reg.substring(1);
 		} else {
 			reg = reg.substring(1,3);
 		}
-		freeRegs[Integer.parseInt(reg)] = true;
+		freeRegs[Integer.parseInt(reg)] = true;*/
 	}
 	
 	private boolean findMsgLabel(String label) {
@@ -188,7 +222,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		
 		return false;
 	}
-	
+
 	public int getMsgIndex(String label) {
 		if (findMsgLabel(label)) {
 			for (int i = 0; i < msgLabels.size(); i++) {
@@ -359,41 +393,49 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		
 		return super.visitExpr(ctx);
 	}
-
+	
 	@Override
 	public String visitType(TypeContext ctx) {
 	
 		String varName = ctx.getParent().getChild(1).getText();
 		String varType = ctx.getText();
 		
-		int offsetVal = totalOffset;
-		
-		st.add(varName, new Variable(varType, offsetVal));
+		int offsetVal = getSPLocation();
 		
 		if (varType.equals("int")) {
 			
-			totalOffset += SIZE_INT;
+			offsetVal -= SIZE_INT;
+			
+			incrementVarOffset(SIZE_INT);
 			
 			addSTROffset(RESULT_REG, offsetVal);
 				
 		} else if (varType.equals("bool")) {
 			
-			totalOffset += SIZE_BOOL;
+			offsetVal -= SIZE_BOOL;
+			
+			incrementVarOffset(SIZE_BOOL);
 			
 			addSTRBOffset(RESULT_REG, offsetVal);
 			
 		} else if (varType.equals("char")) {
 			
-			totalOffset += SIZE_CHAR;
+			offsetVal -= SIZE_CHAR;
+			
+			incrementVarOffset(SIZE_CHAR);
 				
 			addSTRBOffset(RESULT_REG, offsetVal);
 			
 		} else if (varType.equals("string")) {
 			
-			totalOffset += SIZE_STRING;
+			offsetVal -= SIZE_STRING;
+			
+			incrementVarOffset(SIZE_STRING);
 			
 			addSTROffset(RESULT_REG, offsetVal);
 		}
+		
+		st.add(varName, new Variable(varType, offsetVal));
 		
 		return super.visitType(ctx);
 
@@ -422,7 +464,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		// TODO Auto-generated method stub
 		return super.visitIdent(ctx);
 	}
-
+	
 	@Override
 	public String visitFunc(FuncContext ctx) {
 		
@@ -432,6 +474,8 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		String prevLabel = currLabel;
 		currLabel = funcL;
 		
+		initScope(ctx);
+		
 		addPUSH("lr");
 		String ret = super.visitFunc(ctx);
 		addPOP("pc");
@@ -439,6 +483,9 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		addLine(".ltorg");
 		
 		currLabel = prevLabel;
+		
+		endScope();
+		
 		return ret;
 	}
 
@@ -849,11 +896,18 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			
 			String prevLabel = currLabel;
 			currLabel = ifL;
+			initScope(ctx.getChild(3));
 			
 			visitStat((StatContext) ctx.getChild(3));
 			
+			endScope();
+			
 			currLabel = prevLabel;
+			initScope(ctx.getChild(5));
+			
 			visitStat((StatContext) ctx.getChild(5));
+			
+			endScope();
 			
 			String fiL = addNewLoopLabel();
 			addB(fiL);
@@ -869,8 +923,12 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			addB(whileL);
 			
 			currLabel = bodyL;
+			
+			initScope(ctx.getChild(3));
 
 			visitStat((StatContext) ctx.getChild(3));
+			
+			endScope();
 			
 			currLabel = whileL;
 			
@@ -878,9 +936,14 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			
 			addCMP(currReg,"#0");
 			addBEQ(bodyL);
-
+			
 			//freeReg(currReg);
 			
+			return null;
+		} else if(ctx.getChild(0).getText().equals("begin")){
+			initScope(ctx);
+			visitChildren(ctx);
+			endScope();
 			return null;
 		}
 		
@@ -916,17 +979,16 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitProgram(ProgramContext ctx) {
+		
+		addPUSH("lr");
+		initScope(ctx);
+		
 		String ret = super.visitProgram(ctx);
 		
-		String prevLabel = currLabel;
-		currLabel = "main";
-		if(totalOffset>0){addSUBToFront(STACK_POINTER, STACK_POINTER, "#" + totalOffset);}
-		addPUSHToFront("lr");
-		
-		currLabel = prevLabel;
-		if(totalOffset>0){addADD(STACK_POINTER, STACK_POINTER, "#" + totalOffset);}
+		endScope();
 		addMOV(RESULT_REG, "#0");
 		addPOP("pc");
+		
 		return ret;
 	}
 

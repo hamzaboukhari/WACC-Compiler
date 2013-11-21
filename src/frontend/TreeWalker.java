@@ -150,10 +150,12 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			visitStat((StatContext) ctx.getChild(3));			
 			st = st.getParent();
 		} else if (ctx.getChild(0).getText().equals("if")) {
-			st = new SymbolTable(st);
 			visitExpr((ExprContext) ctx.getChild(1));
-			visitStat((StatContext) ctx.getChild(3));
-			visitStat((StatContext) ctx.getChild(5));
+			st = new SymbolTable(st);
+				visitStat((StatContext) ctx.getChild(3));
+			st = st.getParent();
+			st = new SymbolTable(st);
+				visitStat((StatContext) ctx.getChild(5));
 			st = st.getParent();
 		} else if (ctx.getChildCount() > 1 && ctx.getChild(1).getText().equals("=")) {
 			//found assignment
@@ -184,7 +186,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			//found declaration
 			String name = ctx.getChild(1).getText();
 			
-			if(st.lookUpCurrLevelAndEnclosingLevels(name) != null){
+			if(st.lookupCurrLevelOnly(name) != null){
 				System.err.println("Redeclaration Error");
 			}
 			
