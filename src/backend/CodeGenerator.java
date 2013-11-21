@@ -307,6 +307,14 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		addLine("LDR " + strA + ", " + strB);
 	}
 	
+	private void addLDROffset(String str,int offset) {
+		if (offset == 0) {
+			addLine("LDR " + str + ", [" + STACK_POINTER + "]");
+		} else {
+			addLine("LDR " + str + ", [" + STACK_POINTER + ", " +  "#" + offset + "]");
+		}
+	}
+	
 	private void addSTR(String strA,String strB) {
 		addLine("STR " + strA + ", " + strB);
 	}
@@ -461,7 +469,11 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitIdent(IdentContext ctx) {
-		// TODO Auto-generated method stub
+		if(ctx.getParent().getParent().getChildCount() > 1
+			 && ctx.getParent().getParent().getChild(1) instanceof Binary_operContext){
+			addLDROffset(getFreeReg(), getOffset(ctx.getText()));
+		}
+		
 		return super.visitIdent(ctx);
 	}
 	
