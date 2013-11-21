@@ -723,8 +723,16 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 	
 	private void addPrint_Ident(IdentContext ctx) {
+		String ident = ctx.getText();
+		String type = getType(ident);
+		int offset = getOffset(ident);
 		
-		
+		if (type.equals("string")) {
+			if (offset == 0) {
+				addLDR("r0", "[sp]");
+				addBL("p_print_string");
+			}
+		}
 	}
 	
 	public void addPrintln() {

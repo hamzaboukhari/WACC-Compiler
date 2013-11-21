@@ -26,7 +26,7 @@ public class Message {
 	}
 	
 	public void addLabel(int n) {
-		val += "msg_" + n + "\n";
+		val += "msg_" + n + ":\n";
 	}
 	
 	public void addLine(String s) {
