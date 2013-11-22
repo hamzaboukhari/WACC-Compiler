@@ -16,8 +16,12 @@ public class Dictionary<T> {
 		dictionary.put(name, obj);
 	}
 	
-	T get(String name) {
+	public T get(String name) {
 		return dictionary.get(name);
+	}
+	
+	public Map<String, T> getAll(){
+		return dictionary;
 	}
 	
 }

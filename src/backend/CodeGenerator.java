@@ -109,7 +109,11 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		
 		if(totalOffset>0){
 			addSUB(STACK_POINTER, STACK_POINTER, "#" + totalOffset);
-			//TODO: Need to add totalOffset to all Variable Offsets
+			//Add totalOffset to all Variable Offsets in parent scopes
+			List<String> symbols = st.getAllSymbols();
+			for(String s : symbols){
+				st.update(s, new Variable(getType(s),getOffset(s)+totalOffset));
+			}
 		}
 		
 		st.add("totalOffset", new Variable(null, totalOffset));
@@ -121,7 +125,14 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		
 		int totalOffset = st.lookupCurrLevelOnly("totalOffset").getOffset();
 		
-		if(totalOffset>0){addADD(STACK_POINTER, STACK_POINTER, "#" + totalOffset);}
+		if(totalOffset>0){
+			addADD(STACK_POINTER, STACK_POINTER, "#" + totalOffset);
+			//Sub totalOffset to all Variable Offsets in parent scopes
+			List<String> symbols = st.getAllSymbols();
+			for(String s : symbols){
+				st.update(s, new Variable(getType(s),getOffset(s)-totalOffset));
+			}
+		}
 		
 		st = st.getParent();
 		
