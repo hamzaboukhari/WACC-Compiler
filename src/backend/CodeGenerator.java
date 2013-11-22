@@ -1,5 +1,7 @@
 package backend;
 
+import identifier_objects.Type;
+
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -37,6 +39,7 @@ import antlr.BasicParser.StatContext;
 import antlr.BasicParser.Str_literContext;
 import antlr.BasicParser.TypeContext;
 import antlr.BasicParser.Unary_operContext;
+import antlr.BasicLexer;
 import antlr.BasicParserBaseVisitor;
 import antlr.BasicParser.ProgContext;
 
@@ -61,7 +64,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	private boolean[] message;
 	private boolean[] print;
 	
-	private final int NUM_OF_REGS = 12;
+	private final int NUM_OF_REGS = 13;
 	
 	private final String RESULT_REG = "r0";
 	private final String PARAM_REG = "r1";
@@ -104,11 +107,13 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		
 		int totalOffset = sizeCalc.getSize(t);
 		
+		if(totalOffset>0){
+			addSUB(STACK_POINTER, STACK_POINTER, "#" + totalOffset);
+			//TODO: Need to add totalOffset to all Variable Offsets
+		}
+		
 		st.add("totalOffset", new Variable(null, totalOffset));
-		
 		st.add("varOffset", new Variable(null, 0));
-		
-		if(totalOffset>0){addSUB(STACK_POINTER, STACK_POINTER, "#" + totalOffset);}
 		
 	}
 	
@@ -205,12 +210,12 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 	
 	private void freeReg(String reg) {
-	/*	if(reg.length() == 2){
+		if(reg.length() == 2){
 			reg = reg.substring(1);
 		} else {
 			reg = reg.substring(1,3);
 		}
-		freeRegs[Integer.parseInt(reg)] = true;*/
+		freeRegs[Integer.parseInt(reg)] = true;
 	}
 	
 	private boolean findMsgLabel(String label) {
@@ -265,18 +270,12 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		}
 	}
 	
-	private void addToFront(String str){
-		output.put(currLabel, str + "\n" + output.get(currLabel));
+	private String token(String str){
+		return "'"+str+"'";
 	}
-	private void addLineToFront(String str) {
-		addToFront("\t" + str);
-	}
-	private void addPUSHToFront(String str) {
-		addLineToFront("PUSH {" + str + "}");
-	}
-
-	private void addSUBToFront(String strA, String strB, String strC){
-		addLineToFront("SUB " + strA + ", " + strB + ", " + strC);
+	
+	private String getToken(int token){
+		return BasicLexer.tokenNames[token];
 	}
 	
 	private void add(String str){
@@ -351,6 +350,30 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		addLine("MOV " + strA + ", " + strB);
 	}
 	
+	private void addMOVLT(String strA,String strB) {
+		addLine("MOVLT " + strA + ", " + strB);
+	}
+	
+	private void addMOVGE(String strA,String strB) {
+		addLine("MOVGE " + strA + ", " + strB);
+	}
+	
+	private void addMOVLE(String strA,String strB) {
+		addLine("MOVLE " + strA + ", " + strB);
+	}
+	
+	private void addMOVGT(String strA,String strB) {
+		addLine("MOVGT " + strA + ", " + strB);
+	}
+	
+	private void addMOVEQ(String strA,String strB) {
+		addLine("MOVEQ " + strA + ", " + strB);
+	}
+	
+	private void addMOVNE(String strA,String strB) {
+		addLine("MOVNE " + strA + ", " + strB);
+	}
+	
 	private void addCMP(String strA,String strB) {
 		addLine("CMP " + strA + ", " + strB);
 	}
@@ -383,6 +406,14 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		addLine("LDREQ " + strA + ", " + strB);
 	}
 	
+	private void addADDS(String strA,String strB) {
+		addLine("ADDS " + strA + ", " + strA + ", " + strB);
+	}
+	
+	private void addSUBS(String strA,String strB) {
+		addLine("SUBS " + strA + ", " + strA + ", " + strB);
+	}
+	
 	@Override
 	public String visitPair_liter(Pair_literContext ctx) {
 		// TODO Auto-generated method stub
@@ -403,6 +434,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			
 			visitExpr((ExprContext) ctx.getChild(0));
 			visitExpr((ExprContext) ctx.getChild(2));
+			visitBinary_oper((Binary_operContext) ctx.getChild(1));
 			
 			return null;
 		}
@@ -424,7 +456,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			
 			incrementVarOffset(SIZE_INT);
 			
-			addSTROffset(RESULT_REG, offsetVal);
+			addSTROffset(currReg, offsetVal);
 				
 		} else if (varType.equals("bool")) {
 			
@@ -432,7 +464,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			
 			incrementVarOffset(SIZE_BOOL);
 			
-			addSTRBOffset(RESULT_REG, offsetVal);
+			addSTRBOffset(currReg, offsetVal);
 			
 		} else if (varType.equals("char")) {
 			
@@ -440,7 +472,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			
 			incrementVarOffset(SIZE_CHAR);
 				
-			addSTRBOffset(RESULT_REG, offsetVal);
+			addSTRBOffset(currReg, offsetVal);
 			
 		} else if (varType.equals("string")) {
 			
@@ -448,8 +480,10 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			
 			incrementVarOffset(SIZE_STRING);
 			
-			addSTROffset(RESULT_REG, offsetVal);
+			addSTROffset(currReg, offsetVal);
 		}
+		
+		freeReg(currReg);
 		
 		st.add(varName, new Variable(varType, offsetVal));
 		
@@ -546,7 +580,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		msgLabels.add(m); m.addLabel(msgLabels.size() - 1); 
 		m.addLine(".word " + ctx.getText().length());
 		m.addLine(".ascii " + ctx.getText()); 
-		addLDR(RESULT_REG, "=" + "msg_" + (msgLabels.size() - 1)); 
+		addLDR(getFreeReg(), "=" + "msg_" + (msgLabels.size() - 1)); 
 		
 		return super.visitStr_liter(ctx);
 	}
@@ -854,17 +888,18 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			int offsetVal = getOffset(varName);
 			
 			if (varType.equals("int")) {				
-				addSTROffset(RESULT_REG, offsetVal);
+				addSTROffset(currReg, offsetVal);
 			}
 			else if (varType.equals("bool")) {				
-				addSTRBOffset(RESULT_REG, offsetVal);
+				addSTRBOffset(currReg, offsetVal);
 			}
 			else if (varType.equals("char")) {
-				addSTRBOffset(RESULT_REG, offsetVal);
+				addSTRBOffset(currReg, offsetVal);
 			}
 			else if (varType.equals("string")) {
-				addSTROffset(RESULT_REG, offsetVal);
+				addSTROffset(currReg, offsetVal);
 			}
+			freeReg(currReg);
 		}
 
 		return super.visitAssign_lhs(ctx);
@@ -951,7 +986,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			
 			visitExpr((ExprContext) ctx.getChild(1));
 			
-			addCMP(currReg,"#0");
+			addCMP(currReg,TRUE);
 			addBEQ(bodyL);
 			
 			//freeReg(currReg);
@@ -1017,8 +1052,80 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitBinary_oper(Binary_operContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitBinary_oper(ctx);
+		
+		String token = token(ctx.getText());
+		
+		if(token.equals(getToken(BasicLexer.PLUS))){
+			addADDS(prevReg,currReg);
+			freeReg(currReg);
+			currReg = prevReg;
+		}
+		if(token.equals(getToken(BasicLexer.MINUS))){
+			addSUBS(prevReg,currReg);
+			freeReg(currReg);
+			currReg = prevReg;
+		}
+		if(token.equals(getToken(BasicLexer.MULTIPLY))){
+			//addSUBS(prevReg,currReg);
+			freeReg(prevReg);
+			freeReg(currReg);
+		}
+		if(token.equals(getToken(BasicLexer.DIVIDE))){
+			
+		}
+		if(token.equals(getToken(BasicLexer.MOD))){
+			
+		}
+		if(token.equals(getToken(BasicLexer.GREATER))){
+			addCMP(prevReg,currReg);
+			addMOVGT(prevReg,TRUE);
+			addMOVLE(prevReg,FALSE);
+			freeReg(currReg);
+			currReg = prevReg;
+		}
+		if(token.equals(getToken(BasicLexer.GREATER_EQUAL))){
+			addCMP(prevReg,currReg);
+			addMOVGE(prevReg,TRUE);
+			addMOVLT(prevReg,FALSE);
+			freeReg(currReg);
+			currReg = prevReg;
+		}
+		if(token.equals(getToken(BasicLexer.LESS))){
+			addCMP(prevReg,currReg);
+			addMOVLT(prevReg,TRUE);
+			addMOVGE(prevReg,FALSE);
+			freeReg(currReg);
+			currReg = prevReg;
+		}
+		if(token.equals(getToken(BasicLexer.LESS_EQUAL))){
+			addCMP(prevReg,currReg);
+			addMOVLE(prevReg,TRUE);
+			addMOVGT(prevReg,FALSE);
+			freeReg(currReg);
+			currReg = prevReg;
+		}
+		if(token.equals(getToken(BasicLexer.EQUAL))){
+			addCMP(prevReg,currReg);
+			addMOVEQ(prevReg,TRUE);
+			addMOVNE(prevReg,FALSE);
+			freeReg(currReg);
+			currReg = prevReg;
+		}
+		if(token.equals(getToken(BasicLexer.NOT_EQUAL))){
+			addCMP(prevReg,currReg);
+			addMOVNE(prevReg,TRUE);
+			addMOVEQ(prevReg,FALSE);
+			freeReg(currReg);
+			currReg = prevReg;
+		}
+		if(token.equals(getToken(BasicLexer.AND))){
+			
+		}
+		if(token.equals(getToken(BasicLexer.OR))){
+			
+		}
+
+		return null;
 	}
 
 	@Override
@@ -1044,7 +1151,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	@Override
 	public String visitInt_liter(Int_literContext ctx) {
 		
-		addLDR(RESULT_REG, "=" + ctx.getText());
+		addLDR(getFreeReg(), "=" + ctx.getText());
 		
 		return super.visitInt_liter(ctx);
 	}
