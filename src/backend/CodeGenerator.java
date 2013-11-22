@@ -58,8 +58,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	
 	private int loopIndex;
 	private int msgIndex;
-	
-	//private int totalOffset;
 
 	private boolean[] message;
 	private boolean[] print;
@@ -441,7 +439,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	public String visitExpr(ExprContext ctx) {
 		
 		if(ctx.getChildCount() > 2 && ctx.getChild(1) instanceof Binary_operContext){
-			System.out.println("TODO");
+			//System.out.println("TODO");
 			
 			visitExpr((ExprContext) ctx.getChild(0));
 			visitExpr((ExprContext) ctx.getChild(2));
@@ -455,48 +453,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	
 	@Override
 	public String visitType(TypeContext ctx) {
-	
-		String varName = ctx.getParent().getChild(1).getText();
-		String varType = ctx.getText();
-		
-		int offsetVal = getSPLocation();
-		
-		if (varType.equals("int")) {
-			
-			offsetVal -= SIZE_INT;
-			
-			incrementVarOffset(SIZE_INT);
-			
-			addSTROffset(currReg, offsetVal);
-				
-		} else if (varType.equals("bool")) {
-			
-			offsetVal -= SIZE_BOOL;
-			
-			incrementVarOffset(SIZE_BOOL);
-			
-			addSTRBOffset(currReg, offsetVal);
-			
-		} else if (varType.equals("char")) {
-			
-			offsetVal -= SIZE_CHAR;
-			
-			incrementVarOffset(SIZE_CHAR);
-				
-			addSTRBOffset(currReg, offsetVal);
-			
-		} else if (varType.equals("string")) {
-			
-			offsetVal -= SIZE_STRING;
-			
-			incrementVarOffset(SIZE_STRING);
-			
-			addSTROffset(currReg, offsetVal);
-		}
-		
-		freeReg(currReg);
-		
-		st.add(varName, new Variable(varType, offsetVal));
 		
 		return super.visitType(ctx);
 
@@ -1124,22 +1080,179 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitArray_liter(Array_literContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitArray_liter(ctx);
+		int numExp = (ctx.getChildCount() - 1 ) / 2;
+		int offsetVal = 0;
+		
+		String arrType = ctx.getParent().getParent().getChild(0).getText();
+		String varType = arrType.substring(0, arrType.length() - 2);
+		
+		for (int i = 1 ; i < ctx.getChildCount() - 1 ; i += 2) {
+			
+			if (varType.equals("int")) {
+				
+				offsetVal += SIZE_INT;
+				
+				visitInt_liter((Int_literContext) ctx.getChild(i).getChild(0));
+				
+				addSTROffset(currReg, offsetVal);
+				
+				freeReg(currReg);
+					
+			} else if (varType.equals("bool")) {
+				
+				offsetVal += SIZE_BOOL;
+	
+				visitBool_liter((Bool_literContext) ctx.getChild(i).getChild(0));
+				
+				addSTRBOffset(currReg, offsetVal);
+				
+				freeReg(currReg);
+				
+			} else if (varType.equals("char")) {
+				
+				offsetVal += SIZE_CHAR;
+
+				visitChar_liter((Char_literContext) ctx.getChild(i).getChild(0));
+					
+				addSTRBOffset(currReg, offsetVal);
+				
+				freeReg(currReg);
+				
+			} else if (varType.equals("string")) {
+				
+				offsetVal += SIZE_STRING;
+
+				visitStr_liter((Str_literContext) ctx.getChild(i).getChild(0));
+				
+				addSTROffset(currReg, offsetVal);
+				
+				freeReg(currReg);
+				
+			}
+			
+		}
+		
+		addMOV(getFreeReg(), "#" + numExp);	
+		addSTROffset(currReg, 0);	
+		addMOV(currReg, STACK_POINTER);
+		addSTROffset(currReg, getSPLocation());
+		freeReg(currReg);
+		
+		return null;
 	}
 
 	@Override
 	public String visitAssign_rhs(Assign_rhsContext ctx) {
-		// TODO Auto-generated method stub
+		
+		String varName;
+		String varType;
+		String arrType;
+		int numExp;
+		
+		int offsetVal = getSPLocation();
+		
+		if (ctx.getChild(0).getChildCount() > 1) {
+			// Array
+			
+			varName = ctx.getParent().getChild(1).getText();
+			arrType = ctx.getParent().getChild(0).getText();
+			//System.out.println(arrType);
+			varType = arrType.substring(0, arrType.length() - 2);
+			numExp = (ctx.getChild(0).getChildCount() - 1 ) / 2;
+			
+			if (varType.equals("int")) {
+				
+				offsetVal -= SIZE_INT * numExp;
+				
+				incrementVarOffset(SIZE_INT);
+					
+			} else if (varType.equals("bool")) {
+				
+				offsetVal -= SIZE_BOOL * numExp;
+				
+				incrementVarOffset(SIZE_BOOL);
+
+			} else if (varType.equals("char")) {
+				
+				offsetVal -= SIZE_CHAR * numExp;
+				
+				incrementVarOffset(SIZE_CHAR);
+
+			} else if (varType.equals("string")) {
+				
+				offsetVal -= SIZE_STRING * numExp;
+				
+				incrementVarOffset(SIZE_STRING);
+
+			} 
+			
+			st.add(varName, new Variable(varType + "_array", offsetVal));
+			
+		} else {
+			// Base
+			
+			varName = ctx.getParent().getChild(1).getText();
+			varType = ctx.getParent().getChild(0).getText();
+			
+			if (varType.equals("int")) {
+				
+				offsetVal -= SIZE_INT;
+				
+				incrementVarOffset(SIZE_INT);
+				
+				visitInt_liter((Int_literContext) ctx.getChild(0).getChild(0));
+				
+				addSTROffset(currReg, offsetVal);
+					
+			} else if (varType.equals("bool")) {
+				
+				offsetVal -= SIZE_BOOL;
+				
+				incrementVarOffset(SIZE_BOOL);
+				
+				visitBool_liter((Bool_literContext) ctx.getChild(0).getChild(0));
+				
+				addSTRBOffset(currReg, offsetVal);
+				
+			} else if (varType.equals("char")) {
+				
+				offsetVal -= SIZE_CHAR;
+				
+				incrementVarOffset(SIZE_CHAR);
+				
+				visitChar_liter((Char_literContext) ctx.getChild(0).getChild(0));
+					
+				addSTRBOffset(currReg, offsetVal);
+				
+			} else if (varType.equals("string")) {
+				
+				offsetVal -= SIZE_STRING;
+				
+				incrementVarOffset(SIZE_STRING);
+				
+				visitStr_liter((Str_literContext) ctx.getChild(0).getChild(0));
+				
+				addSTROffset(currReg, offsetVal);
+				
+			}
+			
+			//freeReg(currReg);
+			
+			st.add(varName, new Variable(varType, offsetVal));
+			
+			return null;
+			
+		}
+		
 		return super.visitAssign_rhs(ctx);
 	}
 
 	@Override
 	public String visitInt_liter(Int_literContext ctx) {
-		if (message[PrintType.INT.ordinal()]) {
+		/*if (message[PrintType.INT.ordinal()]) {
 			addMsg("3", "\"%d\\0\"");
 			message[PrintType.INT.ordinal()] = false;
-		}		
+		}	*/	
 		
 		addLDR(getFreeReg(), "=" + ctx.getText());
 		

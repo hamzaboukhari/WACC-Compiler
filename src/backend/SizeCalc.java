@@ -3,8 +3,13 @@ package backend;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.RuleNode;
 
+import antlr.BasicParser.Array_literContext;
+import antlr.BasicParser.Bool_literContext;
+import antlr.BasicParser.Char_literContext;
 import antlr.BasicParser.FuncContext;
+import antlr.BasicParser.Int_literContext;
 import antlr.BasicParser.StatContext;
+import antlr.BasicParser.Str_literContext;
 import antlr.BasicParser.TypeContext;
 import antlr.BasicParserBaseVisitor;
 import antlr.BasicParser.ProgContext;
@@ -68,6 +73,41 @@ public class SizeCalc extends BasicParserBaseVisitor<Void> {
 		}
 		
 		return null;
+	}
+	
+	@Override
+	public Void visitArray_liter(Array_literContext ctx) {
+		
+		if (ctx.getChildCount() > 2) {
+			
+			for (int i = 1 ; i < ctx.getChildCount() - 1 ; i += 2) {
+
+				if (ctx.getChild(i).getChild(0) instanceof Int_literContext) {
+	
+					totalOffset += SIZE_INT;
+					
+				} else if (ctx.getChild(i).getChild(0) instanceof Bool_literContext) {
+					
+					totalOffset += SIZE_BOOL;
+					
+				} else if (ctx.getChild(i).getChild(0) instanceof Char_literContext) {
+					
+					totalOffset += SIZE_CHAR;
+					
+				} else if (ctx.getChild(i).getChild(0) instanceof Str_literContext) {
+					
+					totalOffset += SIZE_STRING;
+				
+				}
+			
+			}
+			
+			totalOffset += 2 * SIZE_INT;
+		
+		}
+		
+		return null;
+	
 	}
 
 }
