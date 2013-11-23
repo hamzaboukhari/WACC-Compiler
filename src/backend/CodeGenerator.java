@@ -795,50 +795,69 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	
 	@Override
 	public String visitAssign_lhs(Assign_lhsContext ctx) {
+		
 		if (ctx.getParent().getChild(1).getText().equals("=")) {
+			
 			// Assignment
 			
-			String varName = ctx.getChild(0).getText();
-			String varType = getType(varName);
-			//ParseTree varVal = ctx.getParent().getChild(2);
-			//ParseTree arrayVal = ctx.getParent().getChild(2).getChild(0);
-			int offsetVal = getOffset(varName);
-			
-			if (varType.equals("int")) {
+			if (ctx.getChildCount() == 4) {
 				
-				addSTROffset(currReg, offsetVal);
+				// Array
 				
-			} else if (varType.equals("bool")) {	
+				String arrName = ctx.getChild(0).getText();
+				String arrType = getType(arrName);
+				String arrIndex = ctx.getChild(2).getText();
 				
-				addSTRBOffset(currReg, offsetVal);
+				int offsetVal = getOffset(arrName);
 				
-			} else if (varType.equals("char")) {
+				if (arrType.equals("int[]")) {
+					
+					addSTROffset(currReg, offsetVal);
+					
+				} else if (arrType.equals("bool[]")) {	
+					
+					addSTRBOffset(currReg, offsetVal);
+					
+				} else if (arrType.equals("char[]")) {
+					
+					addSTRBOffset(currReg, offsetVal);
+					
+				} else if (arrType.equals("string[]")) {
+					
+					addSTROffset(currReg, offsetVal);
+					
+				}
 				
-				addSTRBOffset(currReg, offsetVal);
+			} else {
 				
-			} else if (varType.equals("string")) {
-			
-				addSTROffset(currReg, offsetVal);
+				// Base
 				
-			} else if (varType.equals("int[]")) {
+				String varName = ctx.getChild(0).getText();
+				String varType = getType(varName);
+
+				int offsetVal = getOffset(varName);
 				
-				addSTROffset(currReg, offsetVal);
+				if (varType.equals("int")) {
+					
+					addSTROffset(currReg, offsetVal);
+					
+				} else if (varType.equals("bool")) {	
+					
+					addSTRBOffset(currReg, offsetVal);
+					
+				} else if (varType.equals("char")) {
+					
+					addSTRBOffset(currReg, offsetVal);
+					
+				} else if (varType.equals("string")) {
 				
-			} else if (varType.equals("bool[]")) {	
+					addSTROffset(currReg, offsetVal);
+					
+				}
 				
-				addSTRBOffset(currReg, offsetVal);
-				
-			} else if (varType.equals("char[]")) {
-				
-				addSTRBOffset(currReg, offsetVal);
-				
-			} else if (varType.equals("string[]")) {
-				
-				addSTROffset(currReg, offsetVal);
+				freeReg(currReg);
 				
 			}
-			
-			freeReg(currReg);
 		}
 
 		return super.visitAssign_lhs(ctx);
@@ -1192,40 +1211,35 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	@Override
 	public String visitAssign_rhs(Assign_rhsContext ctx) {
 		
-		String varName;
-		String varType;
-		String arrType;
-		int numExp;
-		
+		int numExp;		
 		int offsetVal = getSPLocation();
 		
 		if (ctx.getParent().getChild(0).getChild(0) instanceof Array_typeContext) {
 			// Array
 			
-			varName = ctx.getParent().getChild(1).getText();
-			arrType = ctx.getParent().getChild(0).getText();
-			varType = arrType.substring(0, arrType.length() - 2);
+			String arrName = ctx.getParent().getChild(1).getText();
+			String arrType = ctx.getParent().getChild(0).getText();
 			numExp = (ctx.getChild(0).getChildCount() - 1 ) / 2;
 			
-			if (varType.equals("int")) {
+			if (arrType.equals("int[]")) {
 				
 				offsetVal -= SIZE_INT * numExp;
 				
 				incrementVarOffset(SIZE_INT);
 					
-			} else if (varType.equals("bool")) {
+			} else if (arrType.equals("bool[]")) {
 				
 				offsetVal -= SIZE_BOOL * numExp;
 				
 				incrementVarOffset(SIZE_BOOL);
 
-			} else if (varType.equals("char")) {
+			} else if (arrType.equals("char[]")) {
 				
 				offsetVal -= SIZE_CHAR * numExp;
 				
 				incrementVarOffset(SIZE_CHAR);
 
-			} else if (varType.equals("string")) {
+			} else if (arrType.equals("string[]")) {
 				
 				offsetVal -= SIZE_STRING * numExp;
 				
@@ -1233,13 +1247,13 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 			} 
 			
-			st.add(varName, new Variable(arrType, offsetVal));
+			st.add(arrName, new Variable(arrType, offsetVal));
 			
 		} else if (ctx.getParent().getChild(0) instanceof TypeContext){
 			// Base
 			
-			varName = ctx.getParent().getChild(1).getText();
-			varType = ctx.getParent().getChild(0).getText();
+			String varName = ctx.getParent().getChild(1).getText();
+			String varType = ctx.getParent().getChild(0).getText();
 
 			if (varType.equals("int")) {
 				
