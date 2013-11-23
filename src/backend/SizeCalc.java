@@ -77,9 +77,9 @@ public class SizeCalc extends BasicParserBaseVisitor<Void> {
 	
 	@Override
 	public Void visitArray_liter(Array_literContext ctx) {
-		
+
 		if (ctx.getChildCount() > 2) {
-			
+		
 			for (int i = 1 ; i < ctx.getChildCount() - 1 ; i += 2) {
 
 				if (ctx.getChild(i).getChild(0) instanceof Int_literContext) {
@@ -102,10 +102,21 @@ public class SizeCalc extends BasicParserBaseVisitor<Void> {
 			
 			}
 			
+			
+			// Length
+			
 			totalOffset += 2 * SIZE_INT;
-		
+	
 		}
 		
+		if (ctx.getParent().getParent().getChildCount() == 3) {
+			
+			// Assignment
+			
+			totalOffset -= SIZE_INT;
+		
+		}
+	
 		return null;
 	
 	}

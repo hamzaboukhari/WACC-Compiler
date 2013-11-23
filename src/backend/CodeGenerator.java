@@ -797,23 +797,47 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	public String visitAssign_lhs(Assign_lhsContext ctx) {
 		if (ctx.getParent().getChild(1).getText().equals("=")) {
 			// Assignment
+			
 			String varName = ctx.getChild(0).getText();
 			String varType = getType(varName);
-			
+			//ParseTree varVal = ctx.getParent().getChild(2);
+			//ParseTree arrayVal = ctx.getParent().getChild(2).getChild(0);
 			int offsetVal = getOffset(varName);
 			
-			if (varType.equals("int")) {				
+			if (varType.equals("int")) {
+				
 				addSTROffset(currReg, offsetVal);
-			}
-			else if (varType.equals("bool")) {				
+				
+			} else if (varType.equals("bool")) {	
+				
 				addSTRBOffset(currReg, offsetVal);
-			}
-			else if (varType.equals("char")) {
+				
+			} else if (varType.equals("char")) {
+				
 				addSTRBOffset(currReg, offsetVal);
-			}
-			else if (varType.equals("string")) {
+				
+			} else if (varType.equals("string")) {
+			
 				addSTROffset(currReg, offsetVal);
+				
+			} else if (varType.equals("int[]")) {
+				
+				addSTROffset(currReg, offsetVal);
+				
+			} else if (varType.equals("bool[]")) {	
+				
+				addSTRBOffset(currReg, offsetVal);
+				
+			} else if (varType.equals("char[]")) {
+				
+				addSTRBOffset(currReg, offsetVal);
+				
+			} else if (varType.equals("string[]")) {
+				
+				addSTROffset(currReg, offsetVal);
+				
 			}
+			
 			freeReg(currReg);
 		}
 
@@ -825,9 +849,8 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		
 		if (ctx.getChildCount() > 2 && ctx.getChild(2).getText().equals("=")) {
 			// Found declaration
-			
+
 			visitAssign_rhs((Assign_rhsContext) ctx.getChild(3));
-			visitType((TypeContext) ctx.getChild(0));
 			
 			return null;
 				
@@ -941,11 +964,13 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitBool_liter(Bool_literContext ctx) {
+		/*
 		if (message[PrintType.BOOL.ordinal()]) {
 			addMsg("5", "\"true\\0\"");
 			addMsg("6", "\"false\\0\"");
 			message[PrintType.BOOL.ordinal()] = false;
 		}		
+		*/
 		
 		if(ctx.getText().equals("true")){
 			
@@ -1080,15 +1105,37 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitArray_liter(Array_literContext ctx) {
+		
 		int numExp = (ctx.getChildCount() - 1 ) / 2;
 		int offsetVal = 0;
 		
-		String arrType = ctx.getParent().getParent().getChild(0).getText();
-		String varType = arrType.substring(0, arrType.length() - 2);
+		String arrName;
+		String arrType;
+		
+		boolean dec;
+		
+		if (ctx.getParent().getParent().getChildCount() == 4) {
+			
+			// Declaration
+			
+			dec = true;
+			
+			arrType = ctx.getParent().getParent().getChild(0).getText();
+			
+		} else {
+			
+			// Assignment
+			
+			dec = false;
+			
+			arrName = ctx.getParent().getParent().getChild(0).getText();
+			arrType = getType(arrName);
+		
+		}
 		
 		for (int i = 1 ; i < ctx.getChildCount() - 1 ; i += 2) {
 			
-			if (varType.equals("int")) {
+			if (arrType.equals("int[]")) {
 				
 				offsetVal += SIZE_INT;
 				
@@ -1098,17 +1145,17 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				
 				freeReg(currReg);
 					
-			} else if (varType.equals("bool")) {
+			} else if (arrType.equals("bool[]")) {
 				
 				offsetVal += SIZE_BOOL;
-	
+				
 				visitBool_liter((Bool_literContext) ctx.getChild(i).getChild(0));
 				
 				addSTRBOffset(currReg, offsetVal);
 				
 				freeReg(currReg);
 				
-			} else if (varType.equals("char")) {
+			} else if (arrType.equals("char[]")) {
 				
 				offsetVal += SIZE_CHAR;
 
@@ -1118,7 +1165,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				
 				freeReg(currReg);
 				
-			} else if (varType.equals("string")) {
+			} else if (arrType.equals("string[]")) {
 				
 				offsetVal += SIZE_STRING;
 
@@ -1135,9 +1182,10 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		addMOV(getFreeReg(), "#" + numExp);	
 		addSTROffset(currReg, 0);	
 		addMOV(currReg, STACK_POINTER);
-		addSTROffset(currReg, getSPLocation());
-		freeReg(currReg);
+		if (dec == true) {addSTROffset(currReg, getSPLocation());}
 		
+		freeReg(currReg);
+			
 		return null;
 	}
 
@@ -1151,12 +1199,11 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		
 		int offsetVal = getSPLocation();
 		
-		if (ctx.getChild(0).getChildCount() > 1) {
+		if (ctx.getParent().getChild(0).getChild(0) instanceof Array_typeContext) {
 			// Array
 			
 			varName = ctx.getParent().getChild(1).getText();
 			arrType = ctx.getParent().getChild(0).getText();
-			//System.out.println(arrType);
 			varType = arrType.substring(0, arrType.length() - 2);
 			numExp = (ctx.getChild(0).getChildCount() - 1 ) / 2;
 			
@@ -1186,14 +1233,14 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 			} 
 			
-			st.add(varName, new Variable(varType + "_array", offsetVal));
+			st.add(varName, new Variable(arrType, offsetVal));
 			
-		} else {
+		} else if (ctx.getParent().getChild(0) instanceof TypeContext){
 			// Base
 			
 			varName = ctx.getParent().getChild(1).getText();
 			varType = ctx.getParent().getChild(0).getText();
-			
+
 			if (varType.equals("int")) {
 				
 				offsetVal -= SIZE_INT;
@@ -1236,7 +1283,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				
 			}
 			
-			//freeReg(currReg);
+			freeReg(currReg);
 			
 			st.add(varName, new Variable(varType, offsetVal));
 			
