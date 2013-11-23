@@ -478,8 +478,18 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitIdent(IdentContext ctx) {
-		if(ctx.getParent().getParent().getChildCount() > 1
-			 && ctx.getParent().getParent().getChild(1) instanceof Binary_operContext){
+		/*if((ctx.getParent().getParent().getChildCount() > 1
+			 && ctx.getParent().getParent().getChild(1) instanceof Binary_operContext)
+			|| ctx.getParent){*/
+		boolean assignment = false;
+		ParseTree node = ctx.getParent();
+		while(!(node instanceof ProgContext)){
+			if(node instanceof ExprContext){
+				assignment = true;
+			}
+			node = node.getParent();
+		}
+		if(assignment){
 			addLDROffset(getFreeReg(), getOffset(ctx.getText()));
 		}
 		
@@ -812,21 +822,32 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				
 				if (arrType.equals("int[]")) {
 					
-					addSTROffset(currReg, offsetVal);
+					String valReg = currReg;
+					
+					visitExpr((ExprContext) ctx.getChild(2));//prevReg
+					addMOV(getFreeReg(),"#0");//currReg
+					addADD(currReg,currReg,"#4");
+					addADD(currReg,currReg,prevReg+", LSL #2");
+					
+					addSTR(valReg, "["+currReg+"]");
+					
+					resetRegs();
 					
 				} else if (arrType.equals("bool[]")) {	
 					
-					addSTRBOffset(currReg, offsetVal);
+					addSTRBOffset(currReg, 0);
 					
 				} else if (arrType.equals("char[]")) {
 					
-					addSTRBOffset(currReg, offsetVal);
+					addSTRBOffset(currReg, 0);
 					
 				} else if (arrType.equals("string[]")) {
 					
-					addSTROffset(currReg, offsetVal);
+					addSTROffset(currReg, 0);
 					
 				}
+				
+				return null;
 				
 			} else {
 				
@@ -856,6 +877,8 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				}
 				
 				freeReg(currReg);
+				
+				return null;
 				
 			}
 		}
@@ -968,7 +991,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			addCMP(currReg,TRUE);
 			addBEQ(bodyL);
 			
-			//freeReg(currReg);
+			freeReg(currReg);
 			
 			return null;
 		} else if(ctx.getChild(0).getText().equals("begin")){
