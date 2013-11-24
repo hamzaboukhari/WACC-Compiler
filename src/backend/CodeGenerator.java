@@ -818,34 +818,35 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				String arrType = getType(arrName);
 				String arrIndex = ctx.getChild(2).getText();
 				
-				int offsetVal = getOffset(arrName);
+				String valReg = currReg;
+			
+				//prevReg
+				visitExpr((ExprContext) ctx.getChild(2));
+				//currReg
+				addMOV(getFreeReg(), "#0");
+				
+				addADD(currReg, currReg, "#4");
 				
 				if (arrType.equals("int[]")) {
-					
-					String valReg = currReg;
-					
-					visitExpr((ExprContext) ctx.getChild(2));//prevReg
-					addMOV(getFreeReg(),"#0");//currReg
-					addADD(currReg,currReg,"#4");
-					addADD(currReg,currReg,prevReg+", LSL #2");
-					
-					addSTR(valReg, "["+currReg+"]");
-					
-					resetRegs();
-					
+
+					addADD(currReg, currReg, prevReg + ", LSL #2");
+				 
 				} else if (arrType.equals("bool[]")) {	
 					
-					addSTRBOffset(currReg, 0);
+					addADD(currReg, currReg, prevReg);
 					
 				} else if (arrType.equals("char[]")) {
 					
-					addSTRBOffset(currReg, 0);
+					addADD(currReg, currReg, prevReg);
 					
 				} else if (arrType.equals("string[]")) {
-					
-					addSTROffset(currReg, 0);
-					
+				
+					addADD(currReg, currReg, prevReg + ", LSL #2");
 				}
+				
+				addSTR(valReg, "[" +currReg+ "]");
+				
+				resetRegs();
 				
 				return null;
 				
@@ -881,6 +882,11 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				return null;
 				
 			}
+				
+		} else {
+			
+			// READ
+			
 		}
 
 		return super.visitAssign_lhs(ctx);
@@ -1224,7 +1230,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		addMOV(getFreeReg(), "#" + numExp);	
 		addSTROffset(currReg, 0);	
 		addMOV(currReg, STACK_POINTER);
-		if (dec == true) {addSTROffset(currReg, getSPLocation());}
+		if (dec) {addSTROffset(currReg, getSPLocation());}
 		
 		freeReg(currReg);
 			
