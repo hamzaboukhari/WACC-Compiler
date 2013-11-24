@@ -438,8 +438,12 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	@Override
 	public String visitExpr(ExprContext ctx) {
 		
-		if(ctx.getChildCount() > 2 && ctx.getChild(1) instanceof Binary_operContext){
-			//System.out.println("TODO");
+		if(ctx.getChildCount() == 2 && ctx.getChild(0) instanceof Unary_operContext){
+			
+			
+			
+			return null;
+		}else if(ctx.getChildCount() == 3 && ctx.getChild(1) instanceof Binary_operContext){
 			
 			visitExpr((ExprContext) ctx.getChild(0));
 			visitExpr((ExprContext) ctx.getChild(2));
@@ -466,7 +470,9 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitUnary_oper(Unary_operContext ctx) {
-		// TODO Auto-generated method stub
+		
+		//TODO
+		
 		return super.visitUnary_oper(ctx);
 	}
 
@@ -478,18 +484,16 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 
 	@Override
 	public String visitIdent(IdentContext ctx) {
-		/*if((ctx.getParent().getParent().getChildCount() > 1
-			 && ctx.getParent().getParent().getChild(1) instanceof Binary_operContext)
-			|| ctx.getParent){*/
-		boolean assignment = false;
+		
+		boolean expr = false;
 		ParseTree node = ctx.getParent();
 		while(!(node instanceof ProgContext)){
 			if(node instanceof ExprContext){
-				assignment = true;
+				expr = true;
 			}
 			node = node.getParent();
 		}
-		if(assignment){
+		if(expr){
 			addLDROffset(getFreeReg(), getOffset(ctx.getText()));
 		}
 		
@@ -596,7 +600,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		currLabel = prevLabel;
 	}
 	
-	private void addPrint_Int(Int_literContext ctx) {		
+	private void addPrint_Int(Int_literContext ctx) {
 		addBL("p_print_int");
 		
 		if (print[PrintType.INT.ordinal()]) {
@@ -604,7 +608,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		}
 	}
 	
-	private void addPrint_Bool(Bool_literContext ctx) {		
+	private void addPrint_Bool(Bool_literContext ctx) {
 		addBL("p_print_bool");
 		
 		if (print[PrintType.BOOL.ordinal()]) {
@@ -616,7 +620,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		addBL("putchar");
 	}
 	
-	private void addPrint_String(Str_literContext ctx) {		
+	private void addPrint_String(Str_literContext ctx) {
 		addBL("p_print_string");
 		
 		if (print[PrintType.STRING.ordinal()]) {
