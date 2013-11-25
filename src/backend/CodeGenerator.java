@@ -313,6 +313,11 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		addLine("POP {" + str + "}");
 	}
 	
+	private void addBLEQ(String str) {
+		addLine("BLEQ " + str);
+	}
+	
+	
 	private void addLDR(String strA,String strB) {
 		addLine("LDR " + strA + ", " + strB);
 	}
@@ -683,213 +688,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		currLabel = prevLabel;
 	}
 	
-	private void addPrint_Int(Int_literContext ctx) {
-		addBL("p_print_int");
-		
-		if (print[PrintType.INT.ordinal()]) {
-			addPrint_p_print("int", RESULT_REG);
-		}
-	}
-	
-	private void addPrint_Bool(Bool_literContext ctx) {
-		addBL("p_print_bool");
-		
-		if (print[PrintType.BOOL.ordinal()]) {
-			addPrint_p_print("bool", RESULT_REG);
-		}
-	}
-	
-	private void addPrint_Char(Char_literContext ctx) {
-		addBL("putchar");
-	}
-	
-	private void addPrint_String(Str_literContext ctx) {
-		addBL("p_print_string");
-		
-		if (print[PrintType.STRING.ordinal()]) {
-			addPrint_p_print("string", RESULT_REG);
-		}
-	}
-	
-	private void addPrint_Pair(Pair_literContext ctx) {
-		if (message[PrintType.PAIR.ordinal()]) {
-			Message m = new Message("p", "");
-			msgLabels.add(m);
-			m.addLabel(msgLabels.size() - 1);
-			
-			m.addLine(".word 3");
-			m.addLine(".ascii \"%p\\0\"");
-					
-			message[PrintType.PAIR.ordinal()] = false;
-		}
-		
-		String reg1 = getFreeReg();
-		int reg1_n = Integer.parseInt(reg1.substring(1));
-		
-		addBL("p_print_reference");
-
-		// Create p_print_reference function		
-		if (print[PrintType.REFERENCE.ordinal()]) {
-			addNewLabel("p_print_string");
-			currLabel = "p_print_string";
-			
-			String reg2 = getFreeReg();
-			int reg2_n = Integer.parseInt(reg2.substring(1));
-			
-			addPUSH("lr");
-			addMOV(reg2, reg1);
-			addLDR(reg1, "=msg_" + (msgLabels.size() - 1));
-			addADD(reg1, reg1, "#4");
-			addBL("printf");
-			addMOV(reg1, "#0");
-			addBL("fflush");
-			addPOP("pc");
-			
-			freeRegs[reg2_n] = true;
-			print[PrintType.REFERENCE.ordinal()] = false;			
-		}
-		
-		freeRegs[reg1_n] = true;		
-	}
-	
-	private void addPrint_Array(Array_literContext ctx) {
-		
-	}
-	
-	private void addPrint_Ident(IdentContext ctx) {
-		String ident = ctx.getText();
-		String type = getType(ident);
-		int offset = getOffset(ident);
-		
-		addLDROffset(RESULT_REG, offset);
-		
-		if (type.equals("int")) {
-			addLDROffset(RESULT_REG, offset);
-			addBL("p_print_int");
-			
-			if (print[PrintType.INT.ordinal()]) {
-				addPrint_p_print("int", RESULT_REG);
-			}			
-		}
-		else if (type.equals("bool")) {
-			addLDRSBOffset(RESULT_REG, offset);
-			addBL("p_print_bool");
-
-			if (print[PrintType.BOOL.ordinal()]) {
-				addPrint_p_print("bool", RESULT_REG);
-			}
-		}
-		else if (type.equals("char")) {
-			addLDRSBOffset(RESULT_REG, offset);
-		    addBL("putchar");
-		}
-		else if (type.equals("string")) {
-			addLDROffset(RESULT_REG, offset);
-			addBL("p_print_string");
-						
-			if (message[PrintType.STRING.ordinal()]) {
-				addMsg("5", "\"%.*s\0\"");
-				message[PrintType.STRING.ordinal()] = false;
-			}
-			
-			if (print[PrintType.STRING.ordinal()]) {
-				addPrint_p_print("string", RESULT_REG);
-			}
-		}
-	}
-	
-	private void addMsg(String word, String ascii) {
-		Message m = new Message(ascii, "");
-		
-		msgLabels.add(m);
-		m.addLabel(msgLabels.size() - 1);
-		
-		m.addLine(".word " + word);
-		m.addLine(".ascii  " + ascii);
-	}
-	
-	private void addPrint_p_print(String func, String reg1) {
-		int reg1_n = Integer.parseInt(reg1.substring(1));			
-	
-		addNewLabel("p_print_" + func);
-		currLabel = "p_print_" + func;
-		addPUSH("lr");
-		
-		if (func.equals("int")) {
-			String reg2 = getFreeReg();
-			int reg2_n = Integer.parseInt(reg2.substring(1));
-			
-			addMOV(reg2, reg1);
-			addLDR(reg1, "msg_" + (msgLabels.size() - 1));
-			addADD(reg1, reg1, "#4");
-			
-			freeRegs[reg2_n] = true;
-			print[PrintType.INT.ordinal()] = false;
-		}
-		else if (func.equals("bool")) {
-			addLDRNE(reg1, "=msg_" + (msgLabels.size() - 2));
-			addLDREQ(reg1, "=msg_" + (msgLabels.size() - 1));
-			addADD(reg1, reg1, "#4");
-			print[PrintType.BOOL.ordinal()] = false;
-		}
-		else if (func.equals("string")) {
-			String reg2 = getFreeReg();
-			int reg2_n = Integer.parseInt(reg2.substring(1));
-			String reg3 = getFreeReg();
-			int reg3_n = Integer.parseInt(reg2.substring(1));
-			
-			addLDR(reg2, "[" + reg1 + "]");
-			addADD(reg3, reg1, "#4");
-			addLDR(reg1, "=msg_" + (msgLabels.size() - 2));
-			addADD(reg1, reg1, "#4");
-			
-			freeRegs[reg2_n] = true;		
-			freeRegs[reg3_n] = true;	
-			
-			print[PrintType.STRING.ordinal()] = false;
-		}
-		
-		addBL("printf");
-		addMOV(reg1, "#0");
-		addBL("fflush");
-		addPOP("pc");
-		
-		freeRegs[reg1_n] = true;
-	}
-	
-	public void addPrintln() {
-		String prevLabel = currLabel;
-		
-		if (message[PrintType.NEWLINE.ordinal()]) {			
-			addMsg("1", "\"\\0\"");
-			message[PrintType.NEWLINE.ordinal()] = false;
-		}
-		
-		addBL("p_print_ln");
-		
-		if (print[PrintType.NEWLINE.ordinal()]) {
-			addNewLabel("p_print_ln");
-			currLabel = "p_print_ln";
-			
-			// Get register
-			String reg1 = getFreeReg();
-			int reg1_n = Integer.parseInt(reg1.substring(1));
-			
-			addPUSH("lr");
-			addLDR(reg1, "=msg_" + (msgLabels.size() - 1));
-			addADD(reg1, reg1, "#4");
-			addBL("puts");
-			addMOV(reg1, "#0");
-			addBL("fflush");
-			addPOP("pc");
-			
-			print[PrintType.NEWLINE.ordinal()] = false;
-			freeRegs[reg1_n] = true;
-		}		
-		
-		currLabel = prevLabel;
-	}
-	
 	@Override
 	public String visitAssign_lhs(Assign_lhsContext ctx) {
 		
@@ -937,7 +735,59 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				
 				return null;
 				
-			} else {
+			} else if (ctx.getChild(0) instanceof Pair_elemContext) {	
+				String pair = ctx.getChild(0).getText().substring(3, 4);
+				
+				addLDR(RESULT_REG, "[" + STACK_POINTER + ", #" + getOffset(pair) + "]");
+
+				String reg0 = getFreeReg();
+				
+				if (ctx.getChild(0).getText().substring(0, 3).equals("fst")) {
+					addADD(reg0, reg0, "#4");
+				}
+				else {
+					addADD(reg0, reg0, "#0");
+				}
+				
+				addBL("p_check_null_pointer");
+				
+				addPUSH(reg0);
+				addLDR(reg0, "[" + reg0 + "]");
+				addBL("free");
+				addMOV(reg0, "#4");
+				addBL("malloc");
+				
+				String reg1 = getFreeReg();
+				
+				addPOP(reg1);
+				addSTR(reg0, "[" + reg1 + "]");	
+				
+				freeReg(reg0);
+				freeReg(reg1);
+				
+				if (message[PrintType.NULL.ordinal()]) {
+					addMsg("" + 50, "\"NullReferenceError: dereference a null reference\n\0\"");
+					message[PrintType.NULL.ordinal()] = false;
+				}
+				
+				if (message[PrintType.STRING.ordinal()]) {
+					addMsg("" + 5, "\"%.*s\0\"");
+					message[PrintType.STRING.ordinal()] = false;
+				}
+				
+				if (print[PrintType.NULL.ordinal()]) {
+					addPrint_p_null(RESULT_REG);
+				}
+				
+				if (print[PrintType.RUNTIME.ordinal()]) {
+					addPrint_p_throw(RESULT_REG);
+				}
+				
+				if (print[PrintType.STRING.ordinal()]) {
+					addPrint_p_print("string", RESULT_REG);
+				}
+			}			
+			else {
 				
 				if (ctx.getParent().getChild(2).getChild(1) instanceof IdentContext) {
 					
@@ -1410,7 +1260,77 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			
 			st.add(arrName, new Variable(arrType, offsetVal));
 			
-		} else if (ctx.getParent().getChild(0) instanceof TypeContext){
+		} else if (ctx.getChild(0).getText().equals("newpair")) {
+			if (ctx.getParent().getChild(0) instanceof TypeContext) {
+				// Declaration
+				String varType = ctx.getParent().getChild(0).getText();
+				String varName = ctx.getParent().getChild(1).getText();
+				
+				offsetVal -= 8;
+				incrementVarOffset(8);
+				st.add(varName, new Variable(varType, offsetVal));
+
+				visitExpr((ExprContext) ctx.getChild(2));
+				addPUSH(RESULT_REG);
+				addNewpair_type(ctx.getChild(2).getChild(0));			
+				
+				visitExpr((ExprContext) ctx.getChild(4));
+				addPUSH(RESULT_REG);
+				addNewpair_type(ctx.getChild(4).getChild(0));
+				
+				String reg1 = getFreeReg();
+				String reg2 = getFreeReg();
+				
+				addMOV(RESULT_REG, "#8");
+				addBL("malloc");
+				addPOP(reg1 + ", " + reg2);
+				addSTR(reg2, "[" + RESULT_REG + "]");
+				addSTR(reg1, "[" + RESULT_REG + ", #4]");
+				addSTR(RESULT_REG, "[sp]");
+				addADD("sp", "sp", "#4");
+			}
+			else {
+				// Assignment
+			}
+			
+			return null;
+		} 
+		else if (ctx.getChild(0) instanceof Pair_elemContext) {
+			addBL("p_check_null_pointer");
+			
+			if (ctx.getChild(0).getChild(0).equals("fst")) {
+				addLDR(RESULT_REG, "[" + RESULT_REG + "]");
+			}
+			else {
+				addLDR(RESULT_REG, "[" + RESULT_REG + ", #4]");
+			}
+			
+			addLDR(RESULT_REG, "[" + RESULT_REG + "]");
+			addSTR(RESULT_REG, "[" + STACK_POINTER + "]");
+
+			if (message[PrintType.NULL.ordinal()]) {
+				addMsg("" + 50, "\"NullReferenceError: dereference a null reference\n\0\"");
+				message[PrintType.NULL.ordinal()] = false;
+			}
+			
+			if (message[PrintType.STRING.ordinal()]) {
+				addMsg("" + 5, "\"%.*s\0\"");
+				message[PrintType.STRING.ordinal()] = false;
+			}
+			
+			if (print[PrintType.NULL.ordinal()]) {
+				addPrint_p_null(RESULT_REG);
+			}
+			
+			if (print[PrintType.RUNTIME.ordinal()]) {
+				addPrint_p_throw(RESULT_REG);
+			}
+			
+			if (print[PrintType.STRING.ordinal()]) {
+				addPrint_p_print("string", RESULT_REG);
+			}
+		}		
+		else if (ctx.getParent().getChild(0) instanceof TypeContext){
 			// Base
 			
 			String varName = ctx.getParent().getChild(1).getText();
@@ -1470,16 +1390,303 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		
 		return super.visitAssign_rhs(ctx);
 	}
-
-	@Override
-	public String visitInt_liter(Int_literContext ctx) {
-		/*if (message[PrintType.INT.ordinal()]) {
+	
+	private void addNewpair_type(ParseTree ctx) {
+		if (ctx instanceof Int_literContext) {
+			addMOV(RESULT_REG, "#4");
+		}
+		else if (ctx instanceof Bool_literContext) {
+			addMOV(RESULT_REG, "#1");
+		}
+		else if (ctx instanceof Char_literContext) {
+			addMOV(RESULT_REG, "#1");
+		}
+		else if (ctx instanceof Str_literContext) {
+			addMOV(RESULT_REG, "#4");
+		}
+		else if (ctx instanceof IdentContext) {
+			addMOV(RESULT_REG, "#4");
+		}
+		
+		String reg1 = getFreeReg();
+		
+		addBL("malloc");
+		addPOP(reg1);
+		addSTR(reg1, "[" + RESULT_REG + "]");
+		addPUSH(RESULT_REG);
+		
+		freeReg(reg1);
+	}
+	
+	private void addPrint_Int(Int_literContext ctx) {
+		if (message[PrintType.INT.ordinal()]) {
 			addMsg("3", "\"%d\\0\"");
 			message[PrintType.INT.ordinal()] = false;
-		}	*/	
+		}	
 		
-		addLDR(getFreeReg(), "=" + ctx.getText());
+		addBL("p_print_int");
+		
+		if (print[PrintType.INT.ordinal()]) {
+			addPrint_p_print("int", RESULT_REG);
+		}
+	}
 	
+	private void addPrint_Bool(Bool_literContext ctx) {		
+		addBL("p_print_bool");
+		
+		if (print[PrintType.BOOL.ordinal()]) {
+			addPrint_p_print("bool", RESULT_REG);
+		}
+	}
+	
+	private void addPrint_Char(Char_literContext ctx) {
+		addBL("putchar");
+	}
+	
+	private void addPrint_String(Str_literContext ctx) {
+		if (message[PrintType.STRING.ordinal()]) {
+			addMsg(String.valueOf(ctx.getText().length()), ctx.getText());
+			message[PrintType.INT.ordinal()] = false;
+		}
+		
+		addBL("p_print_string");
+		
+		if (print[PrintType.STRING.ordinal()]) {
+			addPrint_p_print("string", RESULT_REG);
+		}
+	}
+	
+	private void addPrint_Pair(Pair_literContext ctx) {
+		if (message[PrintType.PAIR.ordinal()]) {
+			Message m = new Message("p", "");
+			msgLabels.add(m);
+			m.addLabel(msgLabels.size() - 1);
+			
+			m.addLine(".word 3");
+			m.addLine(".ascii \"%p\\0\"");
+					
+			message[PrintType.PAIR.ordinal()] = false;
+		}
+		
+		String reg1 = getFreeReg();
+		int reg1_n = Integer.parseInt(reg1.substring(1));
+		
+		addBL("p_print_reference");
+	
+		// Create p_print_reference function		
+		if (print[PrintType.REFERENCE.ordinal()]) {
+			addNewLabel("p_print_string");
+			currLabel = "p_print_string";
+			
+			String reg2 = getFreeReg();
+			int reg2_n = Integer.parseInt(reg2.substring(1));
+			
+			addPUSH("lr");
+			addMOV(reg2, reg1);
+			addLDR(reg1, "=msg_" + (msgLabels.size() - 1));
+			addADD(reg1, reg1, "#4");
+			addBL("printf");
+			addMOV(reg1, "#0");
+			addBL("fflush");
+			addPOP("pc");
+			
+			freeRegs[reg2_n] = true;
+			print[PrintType.REFERENCE.ordinal()] = false;			
+		}
+		
+		freeRegs[reg1_n] = true;		
+	}
+	
+	private void addPrint_Array(Array_literContext ctx) {
+		
+	}
+	
+	private void addPrint_Ident(IdentContext ctx) {
+		String ident = ctx.getText();
+		String type = getType(ident);
+		int offset = getOffset(ident);
+		
+		addLDROffset(RESULT_REG, offset);
+		
+		if (type.equals("int")) {
+			if (message[PrintType.INT.ordinal()]) {
+				addMsg("3", "\"%d\\0\"");
+				message[PrintType.INT.ordinal()] = false;
+			}	
+			
+			addLDROffset(RESULT_REG, offset);
+			addBL("p_print_int");
+			
+			if (print[PrintType.INT.ordinal()]) {
+				addPrint_p_print("int", RESULT_REG);
+			}			
+		}
+		else if (type.equals("bool")) {
+			if (message[PrintType.BOOL.ordinal()]) {
+				addMsg("5", "\"true\\0\"");
+				addMsg("6", "\"false\\0\"");
+				message[PrintType.BOOL.ordinal()] = false;
+			}	
+			
+			addLDRSBOffset(RESULT_REG, offset);
+			addBL("p_print_bool");
+	
+			if (print[PrintType.BOOL.ordinal()]) {
+				addPrint_p_print("bool", RESULT_REG);
+			}
+		}
+		else if (type.equals("char")) {
+			addLDRSBOffset(RESULT_REG, offset);
+		    addBL("putchar");
+		}
+		else if (type.equals("string")) {
+			if (message[PrintType.STRING.ordinal()]) {
+				addMsg(String.valueOf(ctx.getText().length()), ctx.getText());
+				message[PrintType.INT.ordinal()] = false;
+			}
+			
+			addLDROffset(RESULT_REG, offset);
+			addBL("p_print_string");
+						
+			if (message[PrintType.STRING.ordinal()]) {
+				addMsg("5", "\"%.*s\0\"");
+				message[PrintType.STRING.ordinal()] = false;
+			}
+			
+			if (print[PrintType.STRING.ordinal()]) {
+				addPrint_p_print("string", RESULT_REG);
+			}
+		}
+	}
+	
+	private void addMsg(String word, String ascii) {
+		Message m = new Message(ascii, "");
+		
+		msgLabels.add(m);
+		m.addLabel(msgLabels.size() - 1);
+		
+		m.addLine(".word " + word);
+		m.addLine(".ascii  " + ascii);
+	}
+	
+	private void addPrint_p_print(String func, String reg1) {
+		int reg1_n = Integer.parseInt(reg1.substring(1));			
+	
+		addNewLabel("p_print_" + func);
+		currLabel = "p_print_" + func;
+		addPUSH("lr");
+		
+		if (func.equals("int")) {
+			String reg2 = getFreeReg();
+			int reg2_n = Integer.parseInt(reg2.substring(1));
+			
+			addMOV(reg2, reg1);
+			addLDR(reg1, "msg_" + (msgLabels.size() - 1));
+			addADD(reg1, reg1, "#4");
+			
+			freeRegs[reg2_n] = true;
+			print[PrintType.INT.ordinal()] = false;
+		}
+		else if (func.equals("bool")) {
+			addLDRNE(reg1, "=msg_" + (msgLabels.size() - 2));
+			addLDREQ(reg1, "=msg_" + (msgLabels.size() - 1));
+			addADD(reg1, reg1, "#4");
+			print[PrintType.BOOL.ordinal()] = false;
+		}
+		else if (func.equals("string")) {
+			String reg2 = getFreeReg();
+			int reg2_n = Integer.parseInt(reg2.substring(1));
+			String reg3 = getFreeReg();
+			int reg3_n = Integer.parseInt(reg2.substring(1));
+			
+			addLDR(reg2, "[" + reg1 + "]");
+			addADD(reg3, reg1, "#4");
+			addLDR(reg1, "=msg_" + (msgLabels.size() - 2));
+			addADD(reg1, reg1, "#4");
+			
+			freeRegs[reg2_n] = true;		
+			freeRegs[reg3_n] = true;	
+			
+			print[PrintType.STRING.ordinal()] = false;
+		}
+		
+		addBL("printf");
+		addMOV(reg1, "#0");
+		addBL("fflush");
+		addPOP("pc");
+		
+		freeRegs[reg1_n] = true;
+	}
+	
+	private void addPrint_p_null(String reg1) {
+		int reg1_n = Integer.parseInt(reg1.substring(1));			
+
+		addNewLabel("p_print_check_null_pointer");
+		currLabel = "p_print_check_null_pointer";
+		
+		addPUSH("lr");
+		addCMP(reg1, "#0");
+		addLDREQ(reg1, "=msg_" + getMsgIndex("\"NullReferenceError: dereference a null reference\n\0\""));
+		addBLEQ("p_throw_runtime_error");
+		addPOP("pc");
+		
+		print[PrintType.NULL.ordinal()] = false;
+		freeRegs[reg1_n] = true;
+	}
+	
+	private void addPrint_p_throw(String reg1) {
+		int reg1_n = Integer.parseInt(reg1.substring(1));			
+
+		addNewLabel("p_print_throw_runtime_error");
+		currLabel = "p_print_throw_runtime_error";
+
+		
+		addBL("p_print_string");
+		addMOV(reg1, "#-1");
+		addBL("exit");
+		
+		print[PrintType.RUNTIME.ordinal()] = false;
+		freeRegs[reg1_n] = true;
+	}
+
+	
+	public void addPrintln() {
+		String prevLabel = currLabel;
+		
+		if (message[PrintType.NEWLINE.ordinal()]) {			
+			addMsg("1", "\"\\0\"");
+			message[PrintType.NEWLINE.ordinal()] = false;
+		}
+		
+		addBL("p_print_ln");
+		
+		if (print[PrintType.NEWLINE.ordinal()]) {
+			addNewLabel("p_print_ln");
+			currLabel = "p_print_ln";
+			
+			// Get register
+			String reg1 = getFreeReg();
+			int reg1_n = Integer.parseInt(reg1.substring(1));
+			
+			addPUSH("lr");
+			addLDR(reg1, "=msg_" + (msgLabels.size() - 1));
+			addADD(reg1, reg1, "#4");
+			addBL("puts");
+			addMOV(reg1, "#0");
+			addBL("fflush");
+			addPOP("pc");
+			
+			print[PrintType.NEWLINE.ordinal()] = false;
+			freeRegs[reg1_n] = true;
+		}		
+		
+		currLabel = prevLabel;
+	}
+
+
+	@Override
+	public String visitInt_liter(Int_literContext ctx) {		
+		addLDR(getFreeReg(), "=" + ctx.getText());	
 		return super.visitInt_liter(ctx);
 	}
 }
