@@ -8,6 +8,7 @@ import antlr.BasicParser.Bool_literContext;
 import antlr.BasicParser.Char_literContext;
 import antlr.BasicParser.FuncContext;
 import antlr.BasicParser.Int_literContext;
+import antlr.BasicParser.ParamContext;
 import antlr.BasicParser.StatContext;
 import antlr.BasicParser.Str_literContext;
 import antlr.BasicParser.TypeContext;
@@ -33,13 +34,40 @@ public class SizeCalc extends BasicParserBaseVisitor<Void> {
 	}
 	
 	@Override
+	public Void visitParam(ParamContext ctx) {
+		
+		String type = ctx.getChild(0).getText();
+		
+		if (type.equals("int")) {
+			
+			totalOffset += SIZE_INT;
+				
+		} else if (type.equals("bool")) {
+			
+			totalOffset += SIZE_BOOL;
+			
+		} else if (type.equals("char")) {
+			
+			totalOffset += SIZE_CHAR;
+			
+		} else if (type.equals("string")) {
+			
+			totalOffset += SIZE_STRING;
+	
+		}
+		
+		return null;
+	}
+	
+	@Override
 	public Void visitFunc(FuncContext ctx) {
+		// Prevents iteration through child scopes
 		return null;
 	}
 	
 	@Override
 	public Void visitStat(StatContext ctx) {
-		
+		// Prevents iteration through child scopes
 		if(ctx.getChild(0).getText().equals("if")){
 			return null;
 		} else if(ctx.getChild(0).getText().equals("while")){
