@@ -107,12 +107,9 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		int totalOffset = sizeCalc.getSize(t);
 		
 		if(totalOffset>0){
-			addSUB(STACK_POINTER, STACK_POINTER, "#" + totalOffset);
+			addSUB(STACK_POINTER, "#" + totalOffset);
 			//Add totalOffset to all Variable Offsets in parent scopes
-			List<String> symbols = st.getAllSymbols();
-			for(String s : symbols){
-				st.update(s, new Variable(getType(s),getOffset(s)+totalOffset));
-			}
+			incrementOffsets(totalOffset);
 		}
 		
 		st.add("totalOffset", new Variable(null, totalOffset));
@@ -127,14 +124,18 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		if(totalOffset>0){
 			addADD(STACK_POINTER, STACK_POINTER, "#" + totalOffset);
 			//Sub totalOffset to all Variable Offsets in parent scopes
-			List<String> symbols = st.getAllSymbols();
-			for(String s : symbols){
-				st.update(s, new Variable(getType(s),getOffset(s)-totalOffset));
-			}
+			incrementOffsets(-totalOffset);
 		}
 		
 		st = st.getParent();
 		
+	}
+	
+	private void incrementOffsets(int val){
+		List<String> symbols = st.getAllSymbols();
+		for(String s : symbols){
+			st.update(s, new Variable(getType(s),getOffset(s) + val));
+		}
 	}
 	
 	private Variable getVariable(String varName){
@@ -417,8 +418,12 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		addLine("BL " + str);
 	}
 
-	private void addSUB(String strA, String strB, String strC){
-		addLine("SUB " + strA + ", " + strB + ", " + strC);
+	private void addSUB(String strA, String strB){
+		addLine("SUB " + strA + ", " + strA + ", " + strB);
+	}
+	
+	private void addRSBS(String strA, String strB){
+		addLine("RSBS " + strA + ", " + strA + ", " + strB);
 	}
 	
 	private void addADD(String strA, String strB, String strC){
@@ -439,6 +444,10 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	
 	private void addSUBS(String strA,String strB) {
 		addLine("SUBS " + strA + ", " + strA + ", " + strB);
+	}
+	
+	private void addEOR(String strA,String strB) {
+		addLine("EOR " + strA + ", " + strA + ", " + strB);
 	}
 	
 	@Override
@@ -492,8 +501,10 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		
 		if(ctx.getChildCount() == 2 && ctx.getChild(0) instanceof Unary_operContext){
 			
-			return null;
+			visitExpr((ExprContext) ctx.getChild(1));
+			visitUnary_oper((Unary_operContext) ctx.getChild(0));
 			
+			return null;
 		}else if(ctx.getChildCount() == 3 && ctx.getChild(1) instanceof Binary_operContext){
 			
 			visitExpr((ExprContext) ctx.getChild(0));
@@ -522,7 +533,19 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	@Override
 	public String visitUnary_oper(Unary_operContext ctx) {
 		
-		//TODO
+		String token = token(ctx.getText());
+		
+		if(token.equals(getToken(BasicLexer.NOT))){
+			addEOR(currReg,"#1");
+			freeReg(currReg);
+		}
+		if(token.equals(getToken(BasicLexer.MINUS))){
+			addRSBS(currReg,"#0");
+			freeReg(currReg);
+		}
+		if(token.equals(getToken(BasicLexer.LENGTH))){
+			
+		}
 		
 		return super.visitUnary_oper(ctx);
 	}
@@ -545,7 +568,12 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			node = node.getParent();
 		}
 		if(expr){
-			addLDROffset(getFreeReg(), getOffset(ctx.getText()));
+			if(getType(ctx.getText()).equals("char")
+					|| getType(ctx.getText()).equals("bool")){
+				addLDRSBOffset(getFreeReg(), getOffset(ctx.getText()));
+			} else {
+				addLDROffset(getFreeReg(), getOffset(ctx.getText()));
+			}
 		}
 		
 		return super.visitIdent(ctx);
@@ -1165,7 +1193,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		return ret;
 	}
 	
-
 	@Override
 	public String visitPair_elem_type(Pair_elem_typeContext ctx) {
 		// TODO Auto-generated method stub
@@ -1188,15 +1215,19 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			currReg = prevReg;
 		}
 		if(token.equals(getToken(BasicLexer.MULTIPLY))){
-			//addSUBS(prevReg,currReg);
+			//
 			freeReg(prevReg);
 			freeReg(currReg);
 		}
 		if(token.equals(getToken(BasicLexer.DIVIDE))){
-			
+			//
+			freeReg(prevReg);
+			freeReg(currReg);
 		}
 		if(token.equals(getToken(BasicLexer.MOD))){
-			
+			addBL("__aeabi_idivmod");
+			freeReg(prevReg);
+			freeReg(currReg);
 		}
 		if(token.equals(getToken(BasicLexer.GREATER))){
 			addCMP(prevReg,currReg);
