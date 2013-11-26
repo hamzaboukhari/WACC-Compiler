@@ -44,19 +44,20 @@ public class Main {
 				CodeGenerator codeGen = new CodeGenerator(tree);
 				codeGen.start();
 				codeGen.printOutput();
-				errorStatus(0);
+				System.exit(exitStatus(0));
 			} else {
-				errorStatus(100);
+				System.exit(exitStatus(100));
 			}
 		} else {
 			System.out.println("Syntax Errors: " + parser.getNumberOfSyntaxErrors());
-			errorStatus(200);
+			System.exit(exitStatus(200));
 		}
 	}
 	
-	private static void errorStatus(int x){
+	private static int exitStatus(int x){
 		System.out.println("\n\n________________________\n");
-		System.out.println("ERROR STATUS "+x);
+		System.out.println("EXIT STATUS "+x);
+		return x;
 	}
 	
 }
