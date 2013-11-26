@@ -1280,8 +1280,9 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				String varType = ctx.getParent().getChild(0).getText();
 				String varName = ctx.getParent().getChild(1).getText();
 				
-				offsetVal -= 8;
-				incrementVarOffset(8);
+				offsetVal -= 4;
+				incrementVarOffset(4);
+				
 				st.add(varName, new Variable(varType, offsetVal));
 
 				visitExpr((ExprContext) ctx.getChild(2));
@@ -1310,6 +1311,28 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			}
 			else {
 				// Assignment
+				String varName = ctx.getParent().getChild(0).getText();
+				st.add(varName, new Variable(getType(varName), offsetVal));
+
+				visitExpr((ExprContext) ctx.getChild(2));
+				addPUSH(currReg);
+				addNewpair_type(ctx.getChild(2).getChild(0));	
+				
+				visitExpr((ExprContext) ctx.getChild(4));
+				addPUSH(currReg);
+				addNewpair_type(ctx.getChild(4).getChild(0));
+
+				addMOV(getFreeReg(), "#8");
+				
+				String reg1 = getFreeReg();
+				String reg2 = getFreeReg();
+				
+				addBL("malloc");
+				addPOP(reg1);
+				addPOP(reg2);
+				addSTR(reg2, "[" + RESULT_REG + "]");
+				addSTR(reg1, "[" + RESULT_REG + ", #4]");
+				addSTR(RESULT_REG, "[sp]");
 			}
 			
 			return null;
