@@ -639,7 +639,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				String pair = ctx.getChild(0).getText().substring(3, 4);
 				
 				addPUSH(currReg);
-				addLDR(getFreeReg(), "[" + STACK_POINTER + ", #" + getOffset(pair) + "]");
+				addLDR(getFreeReg(), "[" + STACK_POINTER + ", #" + (getOffset(pair) + 4) + "]");
 				
 				addBL("p_check_null_pointer");
 				
