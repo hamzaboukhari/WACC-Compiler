@@ -16,7 +16,7 @@ public class Main {
 	public static void main(String[] args) throws IOException{
 		// Get file name
 
-		String file = "../wacc_examples/valid/function/simpleRecursion.wacc";
+		String file = "../wacc_examples/valid/if/ifBasic.wacc";
 		
 		// Read in file
 		CharStream cs = new ANTLRFileStream(file);

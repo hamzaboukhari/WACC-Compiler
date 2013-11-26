@@ -50,6 +50,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	private Map<String, String> output;
 	private List<Message> msgLabels;
 	private String currLabel;
+	private Label labels;
 
 	private boolean[] freeRegs;
 	private String prevReg;
@@ -166,17 +167,29 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	
 	private void setOutput(){
 		output.put("data", ".data\n");
-		output.put("main", "");
+		labels = null;
+		addNewLabel("main");
 	}
 	
 	private void addNewLabel(String label) {
 		output.put(label, label + ":\n");
+		
+		Label newLabel = new Label(label);
+		if(labels == null){
+			labels = newLabel;
+		} else {
+			Label curr = labels;
+			while(curr.getName() != currLabel){
+				curr = curr.getNext();
+			}
+			newLabel.setNext(curr.getNext());
+			curr.setNext(newLabel);
+		}
 	}
 	
-	private String addNewLoopLabel() {
+	private String getNewLoopLabel() {
 		String newLoopLabel = "L" + loopIndex;
 		loopIndex++;
-		addNewLabel(newLoopLabel);
 		return newLoopLabel;
 	}
 	
@@ -197,17 +210,22 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		
 		res += ".text\n";
 		res += ".global main\n";
-		res += "main:\n";
-		res += output.get("main");
 		
+		Label curr = labels;
+		while(curr != null){
+			res += output.get(curr.getName());
+			curr = curr.getNext();
+		}
+		
+		/*
 		Set<String> labels = output.keySet();
 		
 		for (String l : labels) {
-			if(!(l.equals("data") || l.equals("main"))){
+			if(!(l.equals("data"))){
 				res += output.get(l);
 			}
 		}
-		
+		*/
 		return res;
 	}
 	
@@ -904,10 +922,13 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			addCMP(currReg,"#0");
 			freeReg(currReg);
 			
-			String ifL = addNewLoopLabel();
+			String ifL = getNewLoopLabel();
+			String fiL = getNewLoopLabel();
+			
 			addBEQ(ifL);
 			
 			String prevLabel = currLabel;
+			addNewLabel(ifL);
 			currLabel = ifL;
 			initScope(ctx.getChild(5));
 			
@@ -915,6 +936,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			
 			endScope();
 			
+			String lastUsedLabel = currLabel;
 			currLabel = prevLabel;
 			initScope(ctx.getChild(3));
 			
@@ -922,20 +944,23 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			
 			endScope();
 			
-			String fiL = addNewLoopLabel();
 			addB(fiL);
 			
+			currLabel = lastUsedLabel;
+			addNewLabel(fiL);
 			currLabel = fiL;
 		
 			return null;
 		} else if(ctx.getChild(0).getText().equals("while")){
 			
-			String bodyL  = addNewLoopLabel();
-			String whileL = addNewLoopLabel();
+			String bodyL  = getNewLoopLabel();
+			String whileL = getNewLoopLabel();
 			
 			addB(whileL);
 			
+			addNewLabel(bodyL);
 			currLabel = bodyL;
+			addNewLabel(whileL);
 			
 			initScope(ctx.getChild(3));
 

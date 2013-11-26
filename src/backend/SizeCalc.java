@@ -29,7 +29,6 @@ public class SizeCalc extends BasicParserBaseVisitor<Void> {
 	}
 	
 	public int getSize(ParseTree tree) {
-		System.out.println(tree.getText());
 		visitChildren((RuleNode) tree);
 		return totalOffset;
 	}
