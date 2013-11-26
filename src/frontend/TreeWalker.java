@@ -192,10 +192,14 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			
 			Type type = getType(ctx.getChild(0).getText());
 			ParseTree rhs = ctx.getChild(3);
+
+			if(type == null && ctx.getChild(0).getText().substring(0, 4).equals("pair")){
+				type = Type.PAIR;
+			}
 			
 			if (type == Type.PAIR) {
-				Type fst = getType(rhs.getChild(2).getText());
-				Type snd = getType(rhs.getChild(4).getText());
+				Type fst = visit(rhs.getChild(2));
+				Type snd = visit(rhs.getChild(4));
 				st.add(name, new Pair(fst, snd));
 			} else if (rhs.getChild(0).getChildCount() > 0 && rhs.getChild(0).getChild(0).getText().equals("[")){
 				type = getType(ctx.getChild(0).getChild(0).getChild(0).getText());
@@ -222,7 +226,6 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 	
 	@Override public Type visitAssign_rhs(@NotNull BasicParser.Assign_rhsContext ctx) {
 		ParseTree child = ctx.getChild(0);
-		//System.out.println(ctx.getText());
 		if (child.getText().equals("newpair")) {
 			//Found newpair
 			visitExpr((ExprContext) ctx.getChild(2));

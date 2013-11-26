@@ -5,10 +5,10 @@ public class Pair extends Variable {
 	Type fst;
 	Type snd;
 	
-	public Pair(Type fst, Type snd) {
+	public Pair(Type f, Type s) {
 		super(Type.PAIR);
-		fst = this.fst;
-		snd = this.snd;
+		fst = f;
+		snd = s;
 	}
 	
 	public Type getF(){
