@@ -1220,14 +1220,14 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			addBL("p_check_null_pointer");
 			
 			if (ctx.getChild(0).getChild(0).equals("fst")) {
-				addLDR(RESULT_REG, "[" + RESULT_REG + "]");
+				addLDR(getFreeReg(), "[" + currReg + "]");
 			}
 			else {
-				addLDR(RESULT_REG, "[" + RESULT_REG + ", #4]");
+				addLDR(getFreeReg(), "[" + currReg + ", #4]");
 			}
 			
-			addLDR(RESULT_REG, "[" + RESULT_REG + "]");
-			addSTR(RESULT_REG, "[" + STACK_POINTER + "]");
+			addLDR(currReg, "[" + currReg + "]");
+			addSTR(currReg, "[" + STACK_POINTER + "]");
 
 			if (message[PrintType.NULL.ordinal()]) {
 				addMsg("" + 50, "\"NullReferenceError: dereference a null reference\n\0\"");
@@ -1250,6 +1250,8 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			if (print[PrintType.STRING.ordinal()]) {
 				addPrint_p_print("string", getFreeReg());
 			}
+			
+			freeReg(currReg);
 		}		
 		else if (ctx.getParent().getChild(0) instanceof TypeContext){
 			// Base
