@@ -323,8 +323,12 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 	
 	private void addPUSH(String str) {
-		addLine("PUSH {" + str + "}");
-	}
+	//	incrementOffsets(4);
+			if (str.substring(0, 1).equals("r")) {
+				freeReg(str);
+			}
+			
+			addLine("PUSH {" + str + "}");	}
 	
 	private void addPOP(String str) {
 		addLine("POP {" + str + "}");
@@ -658,13 +662,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 
 	@Override
-	public String visitStr_liter(Str_literContext ctx) {
-
-		if (message[PrintType.STRING.ordinal()]) {
-			addMsg(String.valueOf(ctx.getText().length()), ctx.getText());
-			message[PrintType.INT.ordinal()] = false;
-		}
-		
+	public String visitStr_liter(Str_literContext ctx)  {		
 		Message m = new Message(ctx.getText(), ""); 
 		msgLabels.add(m); m.addLabel(msgLabels.size() - 1); 
 		m.addLine(".word " + ctx.getText().length());
@@ -753,32 +751,32 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			} else if (ctx.getChild(0) instanceof Pair_elemContext) {	
 				String pair = ctx.getChild(0).getText().substring(3, 4);
 				
-				addLDR(RESULT_REG, "[" + STACK_POINTER + ", #" + getOffset(pair) + "]");
-
-				String reg0 = getFreeReg();
-				
-				if (ctx.getChild(0).getText().substring(0, 3).equals("fst")) {
-					addADD(reg0, reg0, "#4");
-				}
-				else {
-					addADD(reg0, reg0, "#0");
-				}
+				addPUSH(currReg);
+				addLDR(getFreeReg(), "[" + STACK_POINTER + ", #" + getOffset(pair) + "]");
 				
 				addBL("p_check_null_pointer");
 				
-				addPUSH(reg0);
-				addLDR(reg0, "[" + reg0 + "]");
+				if (ctx.getChild(0).getText().substring(0, 3).equals("fst")) {
+					addADD(currReg, currReg, "#0");
+				}
+				else {
+					addADD(currReg, currReg, "#4");
+				}
+								
+				addPUSH(currReg);
+				addLDR(getFreeReg(), "[" + currReg + "]");
 				addBL("free");
-				addMOV(reg0, "#4");
+				addMOV(currReg, "#4");
 				addBL("malloc");
-				
-				String reg1 = getFreeReg();
-				
-				addPOP(reg1);
-				addSTR(reg0, "[" + reg1 + "]");	
-				
-				freeReg(reg0);
-				freeReg(reg1);
+								
+				addPOP(getFreeReg());
+				addSTR(prevReg, "[" + currReg + "]");
+				addMOV(currReg, prevReg);
+				addPOP(prevReg);
+				addSTR(prevReg, "[" + currReg + "]");
+								
+				freeReg(currReg);
+				freeReg(prevReg);
 				
 				if (message[PrintType.NULL.ordinal()]) {
 					addMsg("" + 50, "\"NullReferenceError: dereference a null reference\n\0\"");
@@ -791,19 +789,18 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				}
 				
 				if (print[PrintType.NULL.ordinal()]) {
-					addPrint_p_null(RESULT_REG);
+					addPrint_p_null(getFreeReg());
 				}
 				
 				if (print[PrintType.RUNTIME.ordinal()]) {
-					addPrint_p_throw(RESULT_REG);
+					addPrint_p_throw(getFreeReg());
 				}
 				
 				if (print[PrintType.STRING.ordinal()]) {
-					addPrint_p_print("string", RESULT_REG);
+					addPrint_p_print("string", getFreeReg());
 				}
-			}			
-			else {
-				
+			}
+			else {				
 				if (ctx.getParent().getChild(2).getChild(1) instanceof IdentContext) {
 					
 					if (ctx.getChildCount() > 4) {
@@ -814,7 +811,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 					addBL("f_" + ctx.getParent().getChild(2).getChild(1).getText());
 					currReg = "r0";
 				}
-				
 				
 				// Base
 				
@@ -888,7 +884,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			
 		} else if (ctx.getChild(0).getText().equals("print") || ctx.getChild(0).getText().equals("println")) {
 			
-			if (ctx.getChild(1) instanceof Unary_operContext) {
+			if (ctx.getChild(1).getChild(0) instanceof Unary_operContext) {
 				String Unary_oper = ctx.getChild(1).getText();				
 				visitExpr((ExprContext) ctx.getChild(1).getChild(1));
 				
@@ -899,15 +895,19 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 					addBL("p_print_int");
 				}					
 			}
-			else if (ctx.getChild(1) instanceof ExprContext ) {
-				
+			else if (ctx.getChild(1).getChild(0) instanceof ExprContext ) {
+
 			}
-			else if (ctx.getChild(1).getText().equals("(")) {
+			else if (ctx.getChild(1).getChild(0).getText().equals("(")) {
 				
 			}
 			else {
 				visitExpr((ExprContext) ctx.getChild(1));
 				addPrint(ctx.getChild(1));
+			}
+
+			if (ctx.getChild(0).getText().equals("println")) {
+				addPrintln();
 			}
 
 			if (ctx.getChild(0).getText().equals("println")) {
@@ -989,15 +989,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 
 	@Override
-	public String visitBool_liter(Bool_literContext ctx) {
-		/*
-		if (message[PrintType.BOOL.ordinal()]) {
-			addMsg("5", "\"true\\0\"");
-			addMsg("6", "\"false\\0\"");
-			message[PrintType.BOOL.ordinal()] = false;
-		}		
-		*/
-		
+	public String visitBool_liter(Bool_literContext ctx) {		
 		if(ctx.getText().equals("true")){
 			
 			addMOV(getFreeReg(), TRUE);
@@ -1293,23 +1285,28 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				st.add(varName, new Variable(varType, offsetVal));
 
 				visitExpr((ExprContext) ctx.getChild(2));
-				addPUSH(RESULT_REG);
+				addPUSH(currReg);
 				addNewpair_type(ctx.getChild(2).getChild(0));			
 				
 				visitExpr((ExprContext) ctx.getChild(4));
-				addPUSH(RESULT_REG);
+				addPUSH(currReg);
 				addNewpair_type(ctx.getChild(4).getChild(0));
+								
+				addMOV(getFreeReg(), "#8");
 				
 				String reg1 = getFreeReg();
 				String reg2 = getFreeReg();
 				
-				addMOV(RESULT_REG, "#8");
 				addBL("malloc");
-				addPOP(reg1 + ", " + reg2);
+				addPOP(reg1);
+				addPOP(reg2);
 				addSTR(reg2, "[" + RESULT_REG + "]");
 				addSTR(reg1, "[" + RESULT_REG + ", #4]");
 				addSTR(RESULT_REG, "[sp]");
-				addADD("sp", "sp", "#4");
+				
+				freeReg(RESULT_REG);
+				freeReg(reg1);
+				freeReg(reg2);
 			}
 			else {
 				// Assignment
@@ -1341,15 +1338,15 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			}
 			
 			if (print[PrintType.NULL.ordinal()]) {
-				addPrint_p_null(RESULT_REG);
+				addPrint_p_null(getFreeReg());
 			}
 			
 			if (print[PrintType.RUNTIME.ordinal()]) {
-				addPrint_p_throw(RESULT_REG);
+				addPrint_p_throw(getFreeReg());
 			}
 			
 			if (print[PrintType.STRING.ordinal()]) {
-				addPrint_p_print("string", RESULT_REG);
+				addPrint_p_print("string", getFreeReg());
 			}
 		}		
 		else if (ctx.getParent().getChild(0) instanceof TypeContext){
@@ -1413,29 +1410,27 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	
 	private void addNewpair_type(ParseTree ctx) {
 		if (ctx instanceof Int_literContext) {
-			addMOV(RESULT_REG, "#4");
+			addMOV(getFreeReg(), "#4");
 		}
 		else if (ctx instanceof Bool_literContext) {
-			addMOV(RESULT_REG, "#1");
+			addMOV(getFreeReg(), "#1");
 		}
 		else if (ctx instanceof Char_literContext) {
-			addMOV(RESULT_REG, "#1");
+			addMOV(getFreeReg(), "#1");
 		}
 		else if (ctx instanceof Str_literContext) {
-			addMOV(RESULT_REG, "#4");
+			addMOV(getFreeReg(), "#4");
 		}
 		else if (ctx instanceof IdentContext) {
-			addMOV(RESULT_REG, "#4");
+			addMOV(getFreeReg(), "#4");
 		}
-		
-		String reg1 = getFreeReg();
-		
+			
 		addBL("malloc");
-		addPOP(reg1);
-		addSTR(reg1, "[" + RESULT_REG + "]");
-		addPUSH(RESULT_REG);
+		addPOP(getFreeReg());
+		addSTR(currReg, "[" + prevReg + "]");
+		addPUSH(prevReg);
 		
-		freeReg(reg1);
+		freeReg(currReg);
 	}
 	
 	private void addPrint_Int(Int_literContext ctx) {
@@ -1451,7 +1446,13 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		}
 	}
 	
-	private void addPrint_Bool(Bool_literContext ctx) {		
+	private void addPrint_Bool(Bool_literContext ctx) {	
+		if (message[PrintType.BOOL.ordinal()]) {
+			addMsg("5", "\"true\\0\"");
+			addMsg("6", "\"false\\0\"");
+			message[PrintType.BOOL.ordinal()] = false;
+		}	
+		
 		addBL("p_print_bool");
 		
 		if (print[PrintType.BOOL.ordinal()]) {
@@ -1465,8 +1466,8 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	
 	private void addPrint_String(Str_literContext ctx) {
 		if (message[PrintType.STRING.ordinal()]) {
-			addMsg(String.valueOf(ctx.getText().length()), ctx.getText());
-			message[PrintType.INT.ordinal()] = false;
+			addMsg("5", "\"%.*s\0\"");
+			message[PrintType.STRING.ordinal()] = false;
 		}
 		
 		addBL("p_print_string");
@@ -1522,19 +1523,14 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 	
 	private void addPrint_Ident(IdentContext ctx) {
-		String ident = ctx.getText();
-		String type = getType(ident);
-		int offset = getOffset(ident);
-		
-		addLDROffset(RESULT_REG, offset);
-		
+		String type = getType(ctx.getText());
+				
 		if (type.equals("int")) {
 			if (message[PrintType.INT.ordinal()]) {
 				addMsg("3", "\"%d\\0\"");
 				message[PrintType.INT.ordinal()] = false;
 			}	
 			
-			addLDROffset(RESULT_REG, offset);
 			addBL("p_print_int");
 			
 			if (print[PrintType.INT.ordinal()]) {
@@ -1548,7 +1544,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				message[PrintType.BOOL.ordinal()] = false;
 			}	
 			
-			addLDRSBOffset(RESULT_REG, offset);
 			addBL("p_print_bool");
 	
 			if (print[PrintType.BOOL.ordinal()]) {
@@ -1556,16 +1551,9 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			}
 		}
 		else if (type.equals("char")) {
-			addLDRSBOffset(RESULT_REG, offset);
 		    addBL("putchar");
 		}
-		else if (type.equals("string")) {
-			if (message[PrintType.STRING.ordinal()]) {
-				addMsg(String.valueOf(ctx.getText().length()), ctx.getText());
-				message[PrintType.INT.ordinal()] = false;
-			}
-			
-			addLDROffset(RESULT_REG, offset);
+		else if (type.equals("string")) {			
 			addBL("p_print_string");
 						
 			if (message[PrintType.STRING.ordinal()]) {
@@ -1590,21 +1578,20 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 	
 	private void addPrint_p_print(String func, String reg1) {
-		int reg1_n = Integer.parseInt(reg1.substring(1));			
-	
+		String prevLabel = currLabel;
+
 		addNewLabel("p_print_" + func);
 		currLabel = "p_print_" + func;
 		addPUSH("lr");
 		
 		if (func.equals("int")) {
 			String reg2 = getFreeReg();
-			int reg2_n = Integer.parseInt(reg2.substring(1));
 			
 			addMOV(reg2, reg1);
 			addLDR(reg1, "msg_" + (msgLabels.size() - 1));
 			addADD(reg1, reg1, "#4");
 			
-			freeRegs[reg2_n] = true;
+			freeReg(reg2);
 			print[PrintType.INT.ordinal()] = false;
 		}
 		else if (func.equals("bool")) {
@@ -1615,18 +1602,15 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		}
 		else if (func.equals("string")) {
 			String reg2 = getFreeReg();
-			int reg2_n = Integer.parseInt(reg2.substring(1));
 			String reg3 = getFreeReg();
-			int reg3_n = Integer.parseInt(reg2.substring(1));
 			
 			addLDR(reg2, "[" + reg1 + "]");
 			addADD(reg3, reg1, "#4");
 			addLDR(reg1, "=msg_" + (msgLabels.size() - 2));
 			addADD(reg1, reg1, "#4");
-			
-			freeRegs[reg2_n] = true;		
-			freeRegs[reg3_n] = true;	
-			
+					
+			freeReg(reg2);
+			freeReg(reg3);
 			print[PrintType.STRING.ordinal()] = false;
 		}
 		
@@ -1635,12 +1619,14 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		addBL("fflush");
 		addPOP("pc");
 		
-		freeRegs[reg1_n] = true;
+		freeReg(reg1);
+		currLabel = prevLabel;
 	}
 	
 	private void addPrint_p_null(String reg1) {
 		int reg1_n = Integer.parseInt(reg1.substring(1));			
 
+		String prevLabel = currLabel;
 		addNewLabel("p_print_check_null_pointer");
 		currLabel = "p_print_check_null_pointer";
 		
@@ -1650,6 +1636,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		addBLEQ("p_throw_runtime_error");
 		addPOP("pc");
 		
+		currLabel = prevLabel;
 		print[PrintType.NULL.ordinal()] = false;
 		freeRegs[reg1_n] = true;
 	}
@@ -1657,6 +1644,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	private void addPrint_p_throw(String reg1) {
 		int reg1_n = Integer.parseInt(reg1.substring(1));			
 
+		String prevLabel = currLabel;
 		addNewLabel("p_print_throw_runtime_error");
 		currLabel = "p_print_throw_runtime_error";
 
@@ -1667,6 +1655,8 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		
 		print[PrintType.RUNTIME.ordinal()] = false;
 		freeRegs[reg1_n] = true;
+		
+		currLabel = prevLabel;
 	}
 	
 	public void addPrintln() {

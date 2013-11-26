@@ -16,7 +16,7 @@ public class Main {
 	public static void main(String[] args) throws IOException{
 		// Get file name
 
-		String file = "../wacc_examples/valid/if/ifBasic.wacc";
+		String file = "../wacc_examples/valid/pairs/writeFst.wacc";
 		
 		// Read in file
 		CharStream cs = new ANTLRFileStream(file);
