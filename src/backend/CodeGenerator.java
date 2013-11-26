@@ -1208,6 +1208,10 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				addSTR(reg2, "[" + RESULT_REG + "]");
 				addSTR(reg1, "[" + RESULT_REG + ", #4]");
 				addSTR(RESULT_REG, "[sp]");
+
+				freeReg(RESULT_REG);
+				freeReg(reg1);
+				freeReg(reg2);				
 			}
 			
 			return null;
