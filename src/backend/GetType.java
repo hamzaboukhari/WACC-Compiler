@@ -1,32 +1,22 @@
 package backend;
 
 import frontend.SymbolTable;
-import identifier_objects.Identifier;
 import identifier_objects.Type;
-import identifier_objects.Variable;
 
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.RuleNode;
 
-import antlr.BasicParser.Array_literContext;
-import antlr.BasicParser.Binary_operContext;
 import antlr.BasicParser.Bool_literContext;
 import antlr.BasicParser.Char_literContext;
 import antlr.BasicParser.ExprContext;
-import antlr.BasicParser.FuncContext;
 import antlr.BasicParser.IdentContext;
 import antlr.BasicParser.Int_literContext;
 import antlr.BasicParser.Pair_literContext;
-import antlr.BasicParser.ParamContext;
-import antlr.BasicParser.StatContext;
 import antlr.BasicParser.Str_literContext;
-import antlr.BasicParser.TypeContext;
 import antlr.BasicLexer;
 import antlr.BasicParser;
 import antlr.BasicParser.Unary_operContext;
 import antlr.BasicParserBaseVisitor;
-import antlr.BasicParser.ProgContext;
 
 public class GetType extends BasicParserBaseVisitor<Type> {
 	
@@ -40,21 +30,6 @@ public class GetType extends BasicParserBaseVisitor<Type> {
 	
 	public Type getType(ParseTree tree) {
 		return visit(tree);
-	}
-	
-
-	private boolean typeMatch(Type t1, Type t2){
-		//System.out.println(t1 + "==" + t2);
-		if(t1 == Type.ANY || t2 == Type.ANY){
-			return true;
-		}
-		if(t1 != t2){
-			//Semantic Error: Types do not match
-			System.err.println("Type Error ("+t1+" != "+t2+")");
-			return false;
-		}
-		return true;
-
 	}
 
 	private Type getType(String type){
@@ -92,9 +67,7 @@ public class GetType extends BasicParserBaseVisitor<Type> {
 		
 		return getType(getIdentType(ctx.getText()));
 		
-	}
-	
-	
+	}	
 	
 	@Override
 	public Type visitPair_liter(Pair_literContext ctx) {
@@ -191,6 +164,4 @@ public class GetType extends BasicParserBaseVisitor<Type> {
 
 	}
 	
-	
-
 }

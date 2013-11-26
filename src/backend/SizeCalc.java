@@ -8,12 +8,10 @@ import antlr.BasicParser.Bool_literContext;
 import antlr.BasicParser.Char_literContext;
 import antlr.BasicParser.FuncContext;
 import antlr.BasicParser.Int_literContext;
-import antlr.BasicParser.ParamContext;
 import antlr.BasicParser.StatContext;
 import antlr.BasicParser.Str_literContext;
 import antlr.BasicParser.TypeContext;
 import antlr.BasicParserBaseVisitor;
-import antlr.BasicParser.ProgContext;
 
 public class SizeCalc extends BasicParserBaseVisitor<Void> {
 	
@@ -23,6 +21,7 @@ public class SizeCalc extends BasicParserBaseVisitor<Void> {
 	private final int SIZE_STRING = 4;
 	private final int SIZE_BOOL = 1;
 	private final int SIZE_CHAR = 1;
+	private final int SIZE_PAIR = 4;
 	
 	public SizeCalc(){
 		totalOffset = 0;
@@ -56,7 +55,7 @@ public class SizeCalc extends BasicParserBaseVisitor<Void> {
 	
 	@Override
 	public Void visitType(TypeContext ctx) {
-		
+	
 		if(ctx.getParent().getChildCount() == 4){
 			if (ctx.getText().equals("int")) {
 				
@@ -74,8 +73,14 @@ public class SizeCalc extends BasicParserBaseVisitor<Void> {
 				
 				totalOffset += SIZE_STRING;
 		
+			} else if (ctx.getText().substring(0, 4).equals("pair")) {
+				
+				totalOffset += SIZE_PAIR;
+				
 			}
+			
 		}
+		
 		return null;
 	}
 	

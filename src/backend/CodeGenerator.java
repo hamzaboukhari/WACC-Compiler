@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.antlr.v4.runtime.tree.ParseTree;
 
@@ -57,7 +56,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	private String currReg;
 	
 	private int loopIndex;
-	private int msgIndex;
 
 	private boolean[] message;
 	private boolean[] print;
@@ -86,7 +84,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		setRegs();
 
 		loopIndex = 0;
-		msgIndex = 0;
 		
 		message = new boolean[10];
 		print = new boolean[10];
@@ -282,20 +279,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		prevReg = currReg;
 		currReg = "r" + (freeReg);
 		return "r" + (freeReg);
-	}
-	
-	private int getSize(String str) {
-		if (str.equals("int")) {
-			return SIZE_INT;
-		} else if (str.equals("string")) {
-			return SIZE_STRING;
-		} else if (str.equals("bool")) {
-			return SIZE_BOOL;
-		} else if (str.equals("char")) {
-			return SIZE_CHAR;
-		} else {
-			return 0;
-		}
 	}
 	
 	private String token(String str){
@@ -670,35 +653,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		addLDR(getFreeReg(), "=" + "msg_" + (msgLabels.size() - 1)); 
 		
 		return super.visitStr_liter(ctx);
-	}
-
-	public void addPrint(ParseTree expr) {
-		String prevLabel = currLabel;
-		ParseTree fstChild = expr.getChild(0);
-		
-		if (fstChild instanceof Int_literContext) {
-			addPrint_Int((Int_literContext) fstChild);
-		}
-		else if (fstChild instanceof Bool_literContext) {
-			addPrint_Bool((Bool_literContext) fstChild);
-		}
-		else if (fstChild instanceof Char_literContext) {
-			addPrint_Char((Char_literContext) fstChild);
-		}
-		else if (fstChild instanceof Str_literContext) {
-			addPrint_String((Str_literContext) fstChild);
-		}
-		else if (fstChild instanceof Pair_literContext) {
-			addPrint_Pair((Pair_literContext) fstChild);
-		}
-		else if (fstChild instanceof Array_literContext) {
-			addPrint_Array((Array_literContext) fstChild);
-		}
-		else if (fstChild instanceof IdentContext) {
-			addPrint_Ident((IdentContext) fstChild);
-		}
-		
-		currLabel = prevLabel;
 	}
 	
 	@Override
@@ -1431,6 +1385,12 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		return super.visitAssign_rhs(ctx);
 	}
 	
+	@Override
+	public String visitInt_liter(Int_literContext ctx) {
+		addLDR(getFreeReg(), "=" + ctx.getText());	
+		return super.visitInt_liter(ctx);
+	}
+	
 	private void addNewpair_type(ParseTree ctx) {
 		if (ctx instanceof Int_literContext) {
 			addMOV(getFreeReg(), "#4");
@@ -1682,6 +1642,35 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		currLabel = prevLabel;
 	}
 	
+	public void addPrint(ParseTree expr) {
+		String prevLabel = currLabel;
+		ParseTree fstChild = expr.getChild(0);
+		
+		if (fstChild instanceof Int_literContext) {
+			addPrint_Int((Int_literContext) fstChild);
+		}
+		else if (fstChild instanceof Bool_literContext) {
+			addPrint_Bool((Bool_literContext) fstChild);
+		}
+		else if (fstChild instanceof Char_literContext) {
+			addPrint_Char((Char_literContext) fstChild);
+		}
+		else if (fstChild instanceof Str_literContext) {
+			addPrint_String((Str_literContext) fstChild);
+		}
+		else if (fstChild instanceof Pair_literContext) {
+			addPrint_Pair((Pair_literContext) fstChild);
+		}
+		else if (fstChild instanceof Array_literContext) {
+			addPrint_Array((Array_literContext) fstChild);
+		}
+		else if (fstChild instanceof IdentContext) {
+			addPrint_Ident((IdentContext) fstChild);
+		}
+		
+		currLabel = prevLabel;
+	}
+	
 	public void addPrintln() {
 		String prevLabel = currLabel;
 		
@@ -1715,10 +1704,5 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		currLabel = prevLabel;
 	}
 
-	@Override
-	public String visitInt_liter(Int_literContext ctx) {
-		addLDR(getFreeReg(), "=" + ctx.getText());	
-		return super.visitInt_liter(ctx);
-	}
 }
 

@@ -5,10 +5,7 @@ package frontend;
 import identifier_objects.*;
 
 import org.antlr.v4.runtime.misc.NotNull;
-import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.RuleNode;
-import org.antlr.v4.runtime.tree.TerminalNode;
 
 import antlr.BasicLexer;
 import antlr.BasicParser;
@@ -29,7 +26,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 
 	public TreeWalker(ProgContext t){
 		tree = t;
-		st = new SymbolTable(null); 
+		st = new SymbolTable<Identifier>(null); 
 	}
 
 	public void validateSemantics(){
@@ -82,7 +79,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 	}
 
 	@Override public Type visitProgram(@NotNull BasicParser.ProgramContext ctx) {
-		st = new SymbolTable(st);
+		st = new SymbolTable<Identifier>(st);
 		visitChildren(ctx);
 		st = st.getParent();
 		return null;
@@ -94,7 +91,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 		currFunc = ctx.getChild(1).getText();
 		st.add(currFunc,func);
 
-		st = new SymbolTable(st);
+		st = new SymbolTable<Identifier>(st);
 		int funcBody = 5;
 		
 		if(ctx.getChildCount() == 8){
@@ -145,16 +142,16 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 				System.err.println("Return out of bounds");
 			}
 		} else if (ctx.getChild(0).getText().equals("while")) {
-			st = new SymbolTable(st);
+			st = new SymbolTable<Identifier>(st);
 			visitExpr((ExprContext) ctx.getChild(1));
 			visitStat((StatContext) ctx.getChild(3));			
 			st = st.getParent();
 		} else if (ctx.getChild(0).getText().equals("if")) {
 			visitExpr((ExprContext) ctx.getChild(1));
-			st = new SymbolTable(st);
+			st = new SymbolTable<Identifier>(st);
 				visitStat((StatContext) ctx.getChild(3));
 			st = st.getParent();
-			st = new SymbolTable(st);
+			st = new SymbolTable<Identifier>(st);
 				visitStat((StatContext) ctx.getChild(5));
 			st = st.getParent();
 		} else if (ctx.getChildCount() > 1 && ctx.getChild(1).getText().equals("=")) {
@@ -205,7 +202,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 				type = getType(ctx.getChild(0).getChild(0).getChild(0).getText());
 				//System.out.println(ctx.getChild(0).getText() + ": " + type);
 				Array arr = new Array(type);
-				for (int i = 1, j = 0 ; i < rhs.getChild(0).getChildCount() - 2 ; i += 2, j++) {
+				for (int i = 1 ; i < rhs.getChild(0).getChildCount() - 2 ; i += 2) {
 					arr.addElement( visitExpr((ExprContext) rhs.getChild(0).getChild(i)) );
 				}
 				st.add(name, arr);
