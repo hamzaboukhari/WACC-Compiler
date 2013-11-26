@@ -10,8 +10,6 @@ import java.util.Set;
 
 import org.antlr.v4.runtime.tree.ParseTree;
 
-import sun.java2d.SunGraphicsEnvironment.TTFilter;
-
 import frontend.SymbolTable;
 
 import antlr.BasicParser.Arg_listContext;
@@ -46,7 +44,7 @@ import antlr.BasicParser.ProgContext;
 
 public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	
-	private ProgContext tree;
+	private ProgContext tree; 
 	private SymbolTable<Variable> st;
 	
 	private Map<String, String> output;
@@ -120,6 +118,8 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	public void endScope() {
 		
 		int totalOffset = st.lookupCurrLevelOnly("totalOffset").getOffset();
+
+		st = st.getParent();
 		
 		if(totalOffset>0){
 			addADD(STACK_POINTER, STACK_POINTER, "#" + totalOffset);
@@ -127,7 +127,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			incrementOffsets(-totalOffset);
 		}
 		
-		st = st.getParent();
 		
 	}
 	
@@ -317,7 +316,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		addLine("BLEQ " + str);
 	}
 	
-	
 	private void addLDR(String strA,String strB) {
 		addLine("LDR " + strA + ", " + strB);
 	}
@@ -369,7 +367,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			addLine("STRB " + str + ", [" + STACK_POINTER + ", " +  "#" + offset + "]!");
 		}
 	}
-	
 	
 	private void addLDRSBOffset(String str, int offset) {
 		if (offset == 0) {
@@ -593,19 +590,19 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		String prevLabel = currLabel;
 		currLabel = funcL;
 		
-		initScope(ctx);
-		
 		addPUSH("lr");
 		
+		initScope(ctx);
+		
 		visitChildren(ctx);
+		
+		endScope();
 		
 		addPOP("pc");
 		addPOP("pc");
 		addLine(".ltorg");
 		
 		currLabel = prevLabel;
-		
-		endScope();
 		
 		freeReg(currReg);
 		
@@ -1351,8 +1348,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				addBL("f_" + ctx.getChild(1).getText());
 				
 			}
-						
-			
 			
 			if (varType.equals("int")) {
 				
@@ -1648,7 +1643,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		print[PrintType.RUNTIME.ordinal()] = false;
 		freeRegs[reg1_n] = true;
 	}
-
 	
 	public void addPrintln() {
 		String prevLabel = currLabel;
@@ -1683,9 +1677,8 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		currLabel = prevLabel;
 	}
 
-
 	@Override
-	public String visitInt_liter(Int_literContext ctx) {		
+	public String visitInt_liter(Int_literContext ctx) {
 		addLDR(getFreeReg(), "=" + ctx.getText());	
 		return super.visitInt_liter(ctx);
 	}

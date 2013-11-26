@@ -22,6 +22,7 @@ public class SymbolTable<T> {
 		while (S != null) {
 			if (S.lookupCurrLevelOnly(name) != null) {
 				S.add(name, obj);
+				return;
 			}
 			S = S.encSymTable;
 		}

@@ -29,34 +29,9 @@ public class SizeCalc extends BasicParserBaseVisitor<Void> {
 	}
 	
 	public int getSize(ParseTree tree) {
+		System.out.println(tree.getText());
 		visitChildren((RuleNode) tree);
 		return totalOffset;
-	}
-	
-	@Override
-	public Void visitParam(ParamContext ctx) {
-		
-		String type = ctx.getChild(0).getText();
-		
-		if (type.equals("int")) {
-			
-			totalOffset += SIZE_INT;
-				
-		} else if (type.equals("bool")) {
-			
-			totalOffset += SIZE_BOOL;
-			
-		} else if (type.equals("char")) {
-			
-			totalOffset += SIZE_CHAR;
-			
-		} else if (type.equals("string")) {
-			
-			totalOffset += SIZE_STRING;
-	
-		}
-		
-		return null;
 	}
 	
 	@Override
@@ -82,24 +57,26 @@ public class SizeCalc extends BasicParserBaseVisitor<Void> {
 	
 	@Override
 	public Void visitType(TypeContext ctx) {
-		if (ctx.getText().equals("int")) {
-			
-			totalOffset += SIZE_INT;
-				
-		} else if (ctx.getText().equals("bool")) {
-			
-			totalOffset += SIZE_BOOL;
-			
-		} else if (ctx.getText().equals("char")) {
-			
-			totalOffset += SIZE_CHAR;
-			
-		} else if (ctx.getText().equals("string")) {
-			
-			totalOffset += SIZE_STRING;
-	
-		}
 		
+		if(ctx.getParent().getChildCount() == 4){
+			if (ctx.getText().equals("int")) {
+				
+				totalOffset += SIZE_INT;
+					
+			} else if (ctx.getText().equals("bool")) {
+				
+				totalOffset += SIZE_BOOL;
+				
+			} else if (ctx.getText().equals("char")) {
+				
+				totalOffset += SIZE_CHAR;
+				
+			} else if (ctx.getText().equals("string")) {
+				
+				totalOffset += SIZE_STRING;
+		
+			}
+		}
 		return null;
 	}
 	
