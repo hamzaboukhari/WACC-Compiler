@@ -16,22 +16,16 @@ import antlr.BasicParser.Array_literContext;
 import antlr.BasicParser.Array_typeContext;
 import antlr.BasicParser.Assign_lhsContext;
 import antlr.BasicParser.Assign_rhsContext;
-import antlr.BasicParser.Base_typeContext;
 import antlr.BasicParser.Binary_operContext;
 import antlr.BasicParser.Bool_literContext;
 import antlr.BasicParser.Char_literContext;
-import antlr.BasicParser.CharacterContext;
 import antlr.BasicParser.ExprContext;
 import antlr.BasicParser.FuncContext;
 import antlr.BasicParser.IdentContext;
 import antlr.BasicParser.Int_literContext;
-import antlr.BasicParser.Int_signContext;
 import antlr.BasicParser.Pair_elemContext;
-import antlr.BasicParser.Pair_elem_typeContext;
 import antlr.BasicParser.Pair_literContext;
-import antlr.BasicParser.Pair_typeContext;
 import antlr.BasicParser.ParamContext;
-import antlr.BasicParser.Param_listContext;
 import antlr.BasicParser.ProgramContext;
 import antlr.BasicParser.StatContext;
 import antlr.BasicParser.Str_literContext;
@@ -63,7 +57,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	private final int NUM_OF_REGS = 13;
 	
 	private final String RESULT_REG = "r0";
-	private final String PARAM_REG = "r1";
 	private final String STACK_POINTER = "sp";
 	
 	private final String FALSE = "#0";
@@ -293,14 +286,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		output.put(currLabel, output.get(currLabel) + str + "\n");
 	}
 	
-	private void addDirective(String str) {
-		add("." + str);
-	}
-	
-	private void addLabel(String str) {
-		add(str + ":");
-	}
-	
 	private void addLine(String str) {
 		add("\t" + str);
 	}
@@ -343,10 +328,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		} else {
 			addLine("STR " + str + ", [" + STACK_POINTER + ", " +  "#" + offset + "]");
 		}
-	}
-	
-	private void addSTRB(String strA, String strB) {
-		addLine("STRB " + strA + ", " + strB);
 	}
 	
 	private void addSTRBOffset(String str, int offset) {
@@ -458,12 +439,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 	
 	@Override
-	public String visitPair_liter(Pair_literContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitPair_liter(ctx);
-	}
-
-	@Override
 	public String visitParam(ParamContext ctx) {
 		
 		int offsetVal = getSPLocation();
@@ -532,12 +507,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 
 	@Override
-	public String visitCharacter(CharacterContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitCharacter(ctx);
-	}
-
-	@Override
 	public String visitUnary_oper(Unary_operContext ctx) {
 		
 		String token = token(ctx.getText());
@@ -555,12 +524,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		}
 		
 		return super.visitUnary_oper(ctx);
-	}
-
-	@Override
-	public String visitProg(ProgContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitProg(ctx);
 	}
 
 	@Override
@@ -615,37 +578,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 
 	@Override
-	public String visitArray_type(Array_typeContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitArray_type(ctx);
-	}
-
-	@Override
-	public String visitPair_elem(Pair_elemContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitPair_elem(ctx);
-	}
-
-	@Override
-	public String visitBase_type(Base_typeContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitBase_type(ctx);
-	}
-
-	@Override
-	public String visitPair_type(Pair_typeContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitPair_type(ctx);
-	}
-
-	@Override
-	public String visitInt_sign(Int_signContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitInt_sign(ctx);
-	}
-
-	@Override
-	public String visitStr_liter(Str_literContext ctx)  {		
+	public String visitStr_liter(Str_literContext ctx)  {
 		Message m = new Message(ctx.getText(), ""); 
 		msgLabels.add(m); m.addLabel(msgLabels.size() - 1); 
 		m.addLine(".word " + ctx.getText().length());
@@ -943,7 +876,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 	}
 
 	@Override
-	public String visitBool_liter(Bool_literContext ctx) {		
+	public String visitBool_liter(Bool_literContext ctx) {
 		if(ctx.getText().equals("true")){
 			
 			addMOV(getFreeReg(), TRUE);
@@ -954,12 +887,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			
 		}
 		return super.visitBool_liter(ctx);
-	}
-
-	@Override
-	public String visitParam_list(Param_listContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitParam_list(ctx);
 	}
 
 	@Override
@@ -1011,12 +938,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		return ret;
 	}
 	
-	@Override
-	public String visitPair_elem_type(Pair_elem_typeContext ctx) {
-		// TODO Auto-generated method stub
-		return super.visitPair_elem_type(ctx);
-	}
-
 	@Override
 	public String visitBinary_oper(Binary_operContext ctx) {
 		

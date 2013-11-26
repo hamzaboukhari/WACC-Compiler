@@ -1,7 +1,5 @@
 package frontend;
 
-
-
 import identifier_objects.*;
 
 import org.antlr.v4.runtime.misc.NotNull;
@@ -16,7 +14,6 @@ import antlr.BasicParser.Param_listContext;
 import antlr.BasicParser.ProgContext;
 import antlr.BasicParser.StatContext;
 import antlr.BasicParserBaseVisitor;
-
 
 public class TreeWalker extends BasicParserBaseVisitor<Type>{
 
@@ -78,6 +75,15 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 		return BasicLexer.tokenNames[token];
 	}
 
+	public boolean checkArray(String ident) {
+		if (getIdent(ident) instanceof identifier_objects.Array) {
+			return true;
+		} else {
+			System.err.println("Type mismatch, must be an array");
+			return false;
+		}
+	}
+	
 	@Override public Type visitProgram(@NotNull BasicParser.ProgramContext ctx) {
 		st = new SymbolTable<Identifier>(st);
 		visitChildren(ctx);
@@ -379,15 +385,6 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 
 		return null;
 
-	}
-
-		public boolean checkArray(String ident) {
-		if (getIdent(ident) instanceof identifier_objects.Array) {
-			return true;
-		} else {
-			System.err.println("Type mismatch, must be an array");
-			return false;
-		}
 	}
 
 	@Override public Type visitBinary_oper(@NotNull BasicParser.Binary_operContext ctx) {
