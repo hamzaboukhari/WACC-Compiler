@@ -20,33 +20,45 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 	private ProgContext tree;
 	private SymbolTable<Identifier> st;
 	private String currFunc;
+	
+	private boolean error;
 
 	public TreeWalker(ProgContext t){
 		tree = t;
-		st = new SymbolTable<Identifier>(null); 
+		st = new SymbolTable<Identifier>(null);
+		
+		error = false;
 	}
 
 	public void validateSemantics(){
 		visitProg(tree);
 	}
 	
+	public boolean semanticError(){
+		return error;
+	}
+	
+	private void error(String str){
+		System.err.println(str);
+		error = true;
+	}
+	
 	private Identifier getIdent(String identName){
 		Identifier ident = st.lookUpCurrLevelAndEnclosingLevels(identName);
 		if(ident == null){
-			System.err.println("Identifier "+identName+" Not Declared");
+			error("Identifier "+identName+" Not Declared");
 		    return new Variable(Type.ANY);
 		}
 		return ident;
 	}
 
 	private boolean typeMatch(Type t1, Type t2){
-		//System.out.println(t1 + "==" + t2);
 		if(t1 == Type.ANY || t2 == Type.ANY){
 			return true;
 		}
 		if(t1 != t2){
 			//Semantic Error: Types do not match
-			System.err.println("Type Error ("+t1+" != "+t2+")");
+			error("Type Error ("+t1+" != "+t2+")");
 			return false;
 		}
 		return true;
@@ -79,7 +91,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 		if (getIdent(ident) instanceof identifier_objects.Array) {
 			return true;
 		} else {
-			System.err.println("Type mismatch, must be an array");
+			error("Type mismatch, must be an array");
 			return false;
 		}
 	}
@@ -145,7 +157,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 		
 		if (ctx.getChild(0).getText().equals("return")){
 			if(currFunc == ""){
-				System.err.println("Return out of bounds");
+				error("Return out of bounds");
 			}
 		} else if (ctx.getChild(0).getText().equals("while")) {
 			st = new SymbolTable<Identifier>(st);
@@ -178,19 +190,18 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			if(type == Type.PAIR){
 				if(ctx.getChild(0).getChild(0).getChild(0).getText().equals("fst")){
 					type = ((Pair) var).getF();
-				} else {
+				} else if(ctx.getChild(0).getChild(0).getChild(0).getText().equals("snd")){
 					type = ((Pair) var).getS();
 				}
 			}
 
-			//System.out.println(ctx.getText());
 			typeMatch(type, visitAssign_rhs((Assign_rhsContext) ctx.getChild(2)));
 		} else if (ctx.getChildCount() > 2 && ctx.getChild(2).getText().equals("=")) {
 			//found declaration
 			String name = ctx.getChild(1).getText();
 			
 			if(st.lookupCurrLevelOnly(name) != null){
-				System.err.println("Redeclaration Error");
+				error("Redeclaration Error");
 			}
 			
 			Type type = getType(ctx.getChild(0).getText());
@@ -206,7 +217,6 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 				st.add(name, new Pair(fst, snd));
 			} else if (rhs.getChild(0).getChildCount() > 0 && rhs.getChild(0).getChild(0).getText().equals("[")){
 				type = getType(ctx.getChild(0).getChild(0).getChild(0).getText());
-				//System.out.println(ctx.getChild(0).getText() + ": " + type);
 				Array arr = new Array(type);
 				for (int i = 1 ; i < rhs.getChild(0).getChildCount() - 2 ; i += 2) {
 					arr.addElement( visitExpr((ExprContext) rhs.getChild(0).getChild(i)) );
@@ -221,7 +231,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 		}
 		else if (ctx.getChild(0).getText().equals("exit")) {
 			if (!(visitExpr((ExprContext) ctx.getChild(1)) == Type.INT)) {
-				System.err.println("Exit code must be an integer");
+				error("Exit code must be an integer");
 			}
 		}
 		return null;		
@@ -236,7 +246,6 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			return Type.PAIR;
 		} else if (child.getChildCount() > 0 && child.getChild(0).getText().equals("[")) {
 			//Found array_liter
-			//System.out.println("sfsdgdfdsfs" + child.getChild(1).getText());
 			if (child.getChildCount() == 2) {
 				return Type.ANY;
 			} else if (child.getChildCount() == 3) {
@@ -246,9 +255,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 				Type currType = null;
 				for (int i = 3 ; i < child.getChildCount() - 1 ; i+=2) {
 					prevType = visitExpr((ExprContext) child.getChild(i - 2));
-					//System.out.println("i - 2 : " + child.getChild(i - 2).getText());
 					currType = visitExpr((ExprContext) child.getChild(i));
-					//System.out.println("i : " + child.getChild(i).getText());
 					typeMatch(currType, prevType);			
 				}
 				return currType;
@@ -262,16 +269,13 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			String func = ctx.getChild(1).getText();
 			Function f = (Function) getIdent(func);
 			int numOfParams = ctx.getChild(3).getChildCount() - ((ctx.getChild(3).getChildCount() - 1) / 2);
-			//System.out.println(ctx.getChild(3).getChildCount());
-			//System.out.println(ctx.getChild(3).getText());
 			if (f.getParams().length != numOfParams) {
-				System.err.println("Incorrect number of parameters in call, need " + f.getParams().length + " has " + numOfParams);
-	            return null;
+				error("Incorrect number of parameters in call, need " + f.getParams().length + " has " + numOfParams);
+				return null;
 			}
 			Type[] params = f.getParams();
 			
 			int i = 0;
-			//System.out.println("call:"+ctx.getText());
 			for (int j = 0 ; j < f.getParams().length && j < params.length ; j++) {
 				Type currType = visitExpr((ExprContext) ctx.getChild(3).getChild(i));
 				typeMatch(currType, params[j]);
@@ -316,7 +320,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			
 			if (token.equals(getToken(BasicLexer.NOT))) {
 				if (visitExpr((ExprContext) ctx.getChild(1)) != Type.BOOL) {
-					System.err.println("Type mismatch, must be of type bool");
+					error("Type mismatch, must be of type bool");
 					return null;
 				} else {
 					return Type.BOOL;
@@ -324,7 +328,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			}
 			else if (token.equals(getToken(BasicLexer.MINUS))) {
 				if (visitExpr((ExprContext) ctx.getChild(1)) != Type.INT) {
-					System.err.println("Type mismatch, must be of type int");
+					error("Type mismatch, must be of type int");
 					return null;
 				} else {
 					return Type.INT;
@@ -337,7 +341,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			}
 			else if (token.equals(getToken(BasicLexer.ORD))) {
 				if (visitExpr((ExprContext) ctx.getChild(1)) != Type.INT) {
-					System.err.println("Type mismatch, must be of type int");
+					error("Type mismatch, must be of type int");
 					return null;
 				} else {
 					return Type.CHAR;
@@ -345,7 +349,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			}
 			else if (token.equals(getToken(BasicLexer.TO_INT))) {
 				if (visitExpr((ExprContext) ctx.getChild(1)) != Type.CHAR) {
-					System.err.println("Type mismatch, must be of type char");
+					error("Type mismatch, must be of type char");
 					return null;
 				} else {
 					return Type.INT;
