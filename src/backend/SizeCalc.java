@@ -45,7 +45,10 @@ public class SizeCalc extends BasicParserBaseVisitor<Void> {
 			return null;
 		} else if(ctx.getChild(0).getText().equals("while")){
 			return null;
-		}else if(ctx.getChild(0).getText().equals("begin")){
+		} else if(ctx.getChild(0).getText().equals("for")){
+			visitStat((StatContext) ctx.getChild(1));
+			return null;
+		} else if(ctx.getChild(0).getText().equals("begin")){
 			return null;
 		}
 		
@@ -55,7 +58,7 @@ public class SizeCalc extends BasicParserBaseVisitor<Void> {
 	
 	@Override
 	public Void visitType(TypeContext ctx) {
-	
+		
 		int numChildren = ctx.getParent().getChildCount();
 		
 		if(numChildren == 4){

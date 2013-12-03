@@ -18,7 +18,7 @@ param : type ident ;
 
 stat 
 	: SKIP
-	| type ident EQUALS assign_rhs 
+	| type ident (COMMA ident)* EQUALS assign_rhs // ***EXTENSION*** (Allow Multiple Declarations)
 	| assign_lhs EQUALS assign_rhs 
 	| READ assign_lhs             
 	| FREE expr 
@@ -26,8 +26,9 @@ stat
 	| EXIT expr
 	| PRINT expr
 	| PRINTLN expr
-	| IF expr THEN stat ELSE stat ENDIF
+	| IF expr THEN stat (ELSE stat)? ENDIF // ***EXTENSION*** (Allow If-Then Statements)
 	| WHILE expr DO stat DONE
+	| FOR stat SEMICOLON expr SEMICOLON stat DO stat DONE // ***EXTENSION***
 	| BEGIN stat END
 	| stat SEMICOLON stat
 	;

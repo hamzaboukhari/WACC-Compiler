@@ -809,22 +809,37 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			addCMP(currReg,"#0");
 			freeReg(currReg);
 			
-			String ifL = getNewLoopLabel();
-			String fiL = getNewLoopLabel();
+			String fiL;
+			String lastUsedLabel;
 			
-			addBEQ(ifL);
+			if(ctx.getChildCount() == 7){
 			
-			String prevLabel = currLabel;
-			addNewLabel(ifL);
-			currLabel = ifL;
-			initScope(ctx.getChild(5));
+				String elseL = getNewLoopLabel();
+				fiL = getNewLoopLabel();
+				
+				addBEQ(elseL);
+				
+				String prevLabel = currLabel;
+				addNewLabel(elseL);
+				currLabel = elseL;
+				initScope(ctx.getChild(5));
+				
+				visitStat((StatContext) ctx.getChild(5));
+				
+				endScope();
+				
+				lastUsedLabel = currLabel;
+				currLabel = prevLabel;
+				
+			} else {
+				fiL = getNewLoopLabel();
+				
+				addBEQ(fiL);
+				
+				lastUsedLabel = currLabel;
+			}
 			
-			visitStat((StatContext) ctx.getChild(5));
 			
-			endScope();
-			
-			String lastUsedLabel = currLabel;
-			currLabel = prevLabel;
 			initScope(ctx.getChild(3));
 			
 			visitStat((StatContext) ctx.getChild(3));
@@ -865,6 +880,39 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			freeReg(currReg);
 			
 			return null;
+		} else if(ctx.getChild(0).getText().equals("for")){
+			
+			// ------------------ EXTENSION ------------------ //
+			
+			visitStat((StatContext) ctx.getChild(1));
+			
+			String bodyL  = getNewLoopLabel();
+			String forL = getNewLoopLabel();
+			
+			addB(forL);
+			
+			addNewLabel(bodyL);
+			currLabel = bodyL;
+			addNewLabel(forL);
+			
+			initScope(ctx.getChild(7));
+
+			visitStat((StatContext) ctx.getChild(7));
+			visitStat((StatContext) ctx.getChild(5));
+			
+			endScope();
+			
+			currLabel = forL;
+			
+			visitExpr((ExprContext) ctx.getChild(3));
+			
+			addCMP(currReg,TRUE);
+			addBEQ(bodyL);
+			
+			freeReg(currReg);
+			
+			return null;
+			
 		} else if(ctx.getChild(0).getText().equals("begin")){
 			initScope(ctx);
 			visitChildren(ctx);

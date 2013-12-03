@@ -159,6 +159,14 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			if(currFunc == ""){
 				error("Return out of bounds");
 			}
+		} else if (ctx.getChild(0).getText().equals("for")) {
+			// ------------------ EXTENSION ------------------ //
+			st = new SymbolTable<Identifier>(st);
+			visitStat((StatContext) ctx.getChild(1));
+			visitExpr((ExprContext) ctx.getChild(3));
+			visitStat((StatContext) ctx.getChild(5));
+			visitStat((StatContext) ctx.getChild(7));
+			st = st.getParent();
 		} else if (ctx.getChild(0).getText().equals("while")) {
 			st = new SymbolTable<Identifier>(st);
 			visitExpr((ExprContext) ctx.getChild(1));
@@ -169,9 +177,12 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			st = new SymbolTable<Identifier>(st);
 				visitStat((StatContext) ctx.getChild(3));
 			st = st.getParent();
-			st = new SymbolTable<Identifier>(st);
-				visitStat((StatContext) ctx.getChild(5));
-			st = st.getParent();
+			// ------------------ EXTENSION ------------------ //
+			if(ctx.getChildCount() == 7){
+				st = new SymbolTable<Identifier>(st);
+					visitStat((StatContext) ctx.getChild(5));
+				st = st.getParent();
+			}
 		} else if (ctx.getChildCount() > 1 && ctx.getChild(1).getText().equals("=")) {
 			//found assignment
 			ParseTree curr = ctx.getChild(0).getChild(0);//Curr = LHS first Child

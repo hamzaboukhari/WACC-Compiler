@@ -17,6 +17,7 @@ IF : 'if' ;
 THEN : 'then' ;
 ELSE : 'else' ;
 ENDIF : 'fi' ;
+FOR : 'for' ; //***EXTENSION***
 WHILE : 'while' ;
 DO : 'do' ;
 DONE : 'done' ;
