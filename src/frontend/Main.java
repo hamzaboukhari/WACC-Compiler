@@ -16,7 +16,7 @@ public class Main {
 	public static void main(String[] args) throws IOException{
 		
 		// Get file name
-		String file = args[0];
+		String file = "/homes/hb2212/wacc_examples/valid/declaration/intDeclaration.wacc";
 		
 		// Read in file
 		CharStream cs = new ANTLRFileStream(file);

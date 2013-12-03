@@ -1087,22 +1087,23 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		
 		boolean dec;
 		
-		if (ctx.getParent().getParent().getChildCount() == 4) {
-			
-			// Declaration
-			
-			dec = true;
-			
-			arrType = ctx.getParent().getParent().getChild(0).getText();
-			
-		} else {
+		if (ctx.getParent().getParent().getChildCount() == 3) {
 			
 			// Assignment
 			
 			dec = false;
-			
+						
 			arrName = ctx.getParent().getParent().getChild(0).getText();
 			arrType = getType(arrName);
+			
+			
+		} else {
+			
+			// Declaration
+			
+			dec = true;
+						
+			arrType = ctx.getParent().getParent().getChild(0).getText();
 		
 		}
 		
@@ -1171,31 +1172,66 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		if (ctx.getParent().getChild(0).getChild(0) instanceof Array_typeContext) {
 			// Array
 			
-			String arrName = ctx.getParent().getChild(1).getText();
 			String arrType = ctx.getParent().getChild(0).getText();
 			numExp = (ctx.getChild(0).getChildCount() - 1 ) / 2;
 			
-			incrementVarOffset(SIZE_INT);
-			
-			if (arrType.equals("int[]")) {
+			if (ctx.getParent().getChildCount() == 4) {
 				
-				offsetVal -= SIZE_INT * numExp;
+				String arrName = ctx.getParent().getChild(1).getText();
+				
+				incrementVarOffset(SIZE_INT);
+				
+				if (arrType.equals("int[]")) {
+					
+					offsetVal -= SIZE_INT * numExp;
 
-			} else if (arrType.equals("bool[]")) {
-				
-				offsetVal -= SIZE_BOOL * numExp;
-	
-			} else if (arrType.equals("char[]")) {
-				
-				offsetVal -= SIZE_CHAR * numExp;
+				} else if (arrType.equals("bool[]")) {
+					
+					offsetVal -= SIZE_BOOL * numExp;
+		
+				} else if (arrType.equals("char[]")) {
+					
+					offsetVal -= SIZE_CHAR * numExp;
 
-			} else if (arrType.equals("string[]")) {
+				} else if (arrType.equals("string[]")) {
+					
+					offsetVal -= SIZE_STRING * numExp;
+		
+				} 
 				
-				offsetVal -= SIZE_STRING * numExp;
-	
-			} 
+				st.add(arrName, new Variable(arrType, offsetVal));
+				
+			} else {
 			
-			st.add(arrName, new Variable(arrType, offsetVal));
+				for (int i = 1 ; i < ctx.getParent().getChildCount() - 2 ; i += 2) {
+
+					String arrName = ctx.getParent().getChild(i).getText();
+					
+					incrementVarOffset(SIZE_INT);
+					
+					if (arrType.equals("int[]")) {
+						
+						offsetVal -= SIZE_INT * numExp;
+
+					} else if (arrType.equals("bool[]")) {
+						
+						offsetVal -= SIZE_BOOL * numExp;
+			
+					} else if (arrType.equals("char[]")) {
+						
+						offsetVal -= SIZE_CHAR * numExp;
+
+					} else if (arrType.equals("string[]")) {
+						
+						offsetVal -= SIZE_STRING * numExp;
+			
+					} 
+					
+					st.add(arrName, new Variable(arrType, offsetVal));
+					
+				}
+			
+			}
 			
 		} else if (ctx.getChild(0).getText().equals("newpair")) {
 			if (ctx.getParent().getChild(0) instanceof TypeContext) {

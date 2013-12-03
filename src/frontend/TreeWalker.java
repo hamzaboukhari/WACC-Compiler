@@ -13,6 +13,7 @@ import antlr.BasicParser.ExprContext;
 import antlr.BasicParser.Param_listContext;
 import antlr.BasicParser.ProgContext;
 import antlr.BasicParser.StatContext;
+import antlr.BasicParser.TypeContext;
 import antlr.BasicParserBaseVisitor;
 
 public class TreeWalker extends BasicParserBaseVisitor<Type>{
@@ -207,36 +208,72 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 			}
 
 			typeMatch(type, visitAssign_rhs((Assign_rhsContext) ctx.getChild(2)));
-		} else if (ctx.getChildCount() > 2 && ctx.getChild(2).getText().equals("=")) {
-			//found declaration
-			String name = ctx.getChild(1).getText();
 			
-			if(st.lookupCurrLevelOnly(name) != null){
-				error("Redeclaration Error");
-			}
+		} else if (ctx.getChild(0) instanceof TypeContext) {
 			
 			Type type = getType(ctx.getChild(0).getText());
-			ParseTree rhs = ctx.getChild(3);
 
-			if(type == null && ctx.getChild(0).getText().substring(0, 4).equals("pair")){
-				type = Type.PAIR;
+			ParseTree rhs = ctx.getChild(3);
+			
+			if (ctx.getChildCount() == 4) {
+				//found declaration
+				String name = ctx.getChild(1).getText();
+				
+				if(st.lookupCurrLevelOnly(name) != null){
+					error("Redeclaration Error");
+				}
+	
+				if(type == null && ctx.getChild(0).getText().substring(0, 4).equals("pair")){
+					type = Type.PAIR;
+				}
+				
+				if (type == Type.PAIR) {
+					Type fst = visit(rhs.getChild(2));
+					Type snd = visit(rhs.getChild(4));
+					st.add(name, new Pair(fst, snd));
+				} else if (rhs.getChild(0).getChildCount() > 0 && rhs.getChild(0).getChild(0).getText().equals("[")){
+					type = getType(ctx.getChild(0).getChild(0).getChild(0).getText());
+					Array arr = new Array(type);
+					for (int i = 1 ; i < rhs.getChild(0).getChildCount() - 2 ; i += 2) {
+						arr.addElement( visitExpr((ExprContext) rhs.getChild(0).getChild(i)) );
+					}
+					st.add(name, arr);
+				} else {
+					st.add(name, new Variable(type));
+				}
+				typeMatch(type, visitAssign_rhs((Assign_rhsContext) rhs));
+				
+			} else {
+				// ------------------ EXTENSION ------------------ //
+				// Multiple Declaration
+				
+				for (int i = 1 ; i < ctx.getChildCount() - 2 ; i += 2) {	
+					
+					String name = ctx.getChild(i).getText();
+
+					if(st.lookupCurrLevelOnly(name) != null){
+						error("Redeclaration Error");
+					}
+					
+					if (type == Type.PAIR) {
+						Type fst = visit(rhs.getChild(2));
+						Type snd = visit(rhs.getChild(4));
+						st.add(name, new Pair(fst, snd));
+					} else if (rhs.getChild(0).getChildCount() > 0 && rhs.getChild(0).getChild(0).getText().equals("[")){
+						type = getType(ctx.getChild(0).getChild(0).getChild(0).getText());
+						Array arr = new Array(type);
+						for (int j = 1 ; j < rhs.getChild(0).getChildCount() - 2 ; j += 2) {
+							arr.addElement(visitExpr((ExprContext) rhs.getChild(0).getChild(j)));
+						}
+						st.add(name, arr);
+					} else {
+						st.add(name, new Variable(type));
+				
+					}
+				}
+				// ------------------ EXTENSION ------------------ //
 			}
 			
-			if (type == Type.PAIR) {
-				Type fst = visit(rhs.getChild(2));
-				Type snd = visit(rhs.getChild(4));
-				st.add(name, new Pair(fst, snd));
-			} else if (rhs.getChild(0).getChildCount() > 0 && rhs.getChild(0).getChild(0).getText().equals("[")){
-				type = getType(ctx.getChild(0).getChild(0).getChild(0).getText());
-				Array arr = new Array(type);
-				for (int i = 1 ; i < rhs.getChild(0).getChildCount() - 2 ; i += 2) {
-					arr.addElement( visitExpr((ExprContext) rhs.getChild(0).getChild(i)) );
-				}
-				st.add(name, arr);
-			} else {
-				st.add(name, new Variable(type));
-			}
-			typeMatch(type, visitAssign_rhs((Assign_rhsContext) rhs));
 		} else if (ctx.getChild(0).getText().equals("print") || ctx.getChild(0).getText().equals("println")) {
 			visitExpr((ExprContext) ctx.getChild(1));
 		}
@@ -245,7 +282,7 @@ public class TreeWalker extends BasicParserBaseVisitor<Type>{
 				error("Exit code must be an integer");
 			}
 		}
-		return null;		
+		return null;			
 	}
 	
 	@Override public Type visitAssign_rhs(@NotNull BasicParser.Assign_rhsContext ctx) {
