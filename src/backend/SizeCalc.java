@@ -56,7 +56,10 @@ public class SizeCalc extends BasicParserBaseVisitor<Void> {
 	@Override
 	public Void visitType(TypeContext ctx) {
 	
-		if(ctx.getParent().getChildCount() == 4){
+		int numChildren = ctx.getParent().getChildCount();
+		
+		if(numChildren == 4){
+			
 			if (ctx.getText().equals("int")) {
 				
 				totalOffset += SIZE_INT;
@@ -79,6 +82,32 @@ public class SizeCalc extends BasicParserBaseVisitor<Void> {
 				
 			}
 			
+		} else {
+	
+			int numIdents = (numChildren / 2) - 1;
+			
+			if (ctx.getText().equals("int")) {
+				
+				totalOffset += SIZE_INT * numIdents;
+					
+			} else if (ctx.getText().equals("bool")) {
+				
+				totalOffset += SIZE_BOOL * numIdents;
+				
+			} else if (ctx.getText().equals("char")) {
+				
+				totalOffset += SIZE_CHAR * numIdents;
+				
+			} else if (ctx.getText().equals("string")) {
+				
+				totalOffset += SIZE_STRING * numIdents;
+			
+			} else if (ctx.getText().substring(0, 4).equals("pair")) {
+				
+				totalOffset += SIZE_PAIR * numIdents;
+					
+			}
+						
 		}
 		
 		return null;

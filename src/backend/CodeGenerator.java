@@ -1256,9 +1256,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		else if (ctx.getParent().getChild(0) instanceof TypeContext){
 			// Base
 			
-			String varName = ctx.getParent().getChild(1).getText();
-			String varType = ctx.getParent().getChild(0).getText();
-			
 			if (ctx.getChild(0) instanceof ExprContext) {
 				
 				visitExpr((ExprContext) ctx.getChild(0));
@@ -1275,38 +1272,85 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				
 			}
 			
-			if (varType.equals("int")) {
+			String varType = ctx.getParent().getChild(0).getText();
+			
+			if (ctx.getParent().getChildCount() == 4) {
 				
-				incrementVarOffset(SIZE_INT);
+				String varName = ctx.getParent().getChild(1).getText();
 				
-				addSTROffset(currReg, getSPLocation());
+				if (varType.equals("int")) {
+					
+					incrementVarOffset(SIZE_INT);
+					
+					addSTROffset(currReg, getSPLocation());
+					
+				} else if (varType.equals("bool")) {
+					
+					incrementVarOffset(SIZE_BOOL);
+					
+					addSTROffset(currReg, getSPLocation());
+					
+				} else if (varType.equals("char")) {
+					
+					incrementVarOffset(SIZE_CHAR);
+					
+					addSTROffset(currReg, getSPLocation());
+					
+				} else if (varType.equals("string")) {
+					
+					incrementVarOffset(SIZE_STRING);
+					
+					addSTROffset(currReg, getSPLocation());
+					
+				}
 				
-			} else if (varType.equals("bool")) {
+				st.add(varName, new Variable(varType, getSPLocation()));
 				
-				incrementVarOffset(SIZE_BOOL);
+				freeReg(currReg);
 				
-				addSTROffset(currReg, getSPLocation());
-				
-			} else if (varType.equals("char")) {
-				
-				incrementVarOffset(SIZE_CHAR);
-				
-				addSTROffset(currReg, getSPLocation());
-				
-			} else if (varType.equals("string")) {
-				
-				incrementVarOffset(SIZE_STRING);
-				
-				addSTROffset(currReg, getSPLocation());
+			} else {
+					
+				for (int i = 1 ; i < ctx.getParent().getChildCount() - 2 ; i += 2) {	
+					
+					String varName = ctx.getParent().getChild(i).getText();
+					
+					if (varType.equals("int")) {
+						
+						incrementVarOffset(SIZE_INT);
+						
+						addSTROffset(currReg, getSPLocation());
+						
+					} else if (varType.equals("bool")) {
+						
+						incrementVarOffset(SIZE_BOOL);
+						
+						addSTROffset(currReg, getSPLocation());
+						
+					} else if (varType.equals("char")) {
+						
+						incrementVarOffset(SIZE_CHAR);
+						
+						addSTROffset(currReg, getSPLocation());
+						
+					} else if (varType.equals("string")) {
+						
+						incrementVarOffset(SIZE_STRING);
+						
+						addSTROffset(currReg, getSPLocation());
+						
+					}
+					
+					st.add(varName, new Variable(varType, getSPLocation()));
+					
+					freeReg(currReg);
+
+				}
+			
 				
 			}
 			
-			st.add(varName, new Variable(varType, getSPLocation()));
-			
-			freeReg(currReg);
-			
 			return null;
-			
+				
 		}
 		
 		return super.visitAssign_rhs(ctx);
