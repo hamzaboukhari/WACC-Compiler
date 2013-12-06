@@ -733,14 +733,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 		} else {
 			
 			// READ
-			/*
-			addPUSH("lr");
-			addMOV("r1", "r0");
-			addLDR(getFreeReg(), "msg_3");
-			addADD(getFreeReg(), getFreeReg(), "#4");
-			addBL("scanf");
-			addPOP("pc");
-			*/
+
 		}
 
 		return super.visitAssign_lhs(ctx);
@@ -1200,36 +1193,6 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				} 
 				
 				st.add(arrName, new Variable(arrType, offsetVal));
-				
-			} else {
-			
-				for (int i = 1 ; i < ctx.getParent().getChildCount() - 2 ; i += 2) {
-
-					String arrName = ctx.getParent().getChild(i).getText();
-					
-					incrementVarOffset(SIZE_INT);
-					
-					if (arrType.equals("int[]")) {
-						
-						offsetVal -= SIZE_INT * numExp;
-
-					} else if (arrType.equals("bool[]")) {
-						
-						offsetVal -= SIZE_BOOL * numExp;
-			
-					} else if (arrType.equals("char[]")) {
-						
-						offsetVal -= SIZE_CHAR * numExp;
-
-					} else if (arrType.equals("string[]")) {
-						
-						offsetVal -= SIZE_STRING * numExp;
-			
-					} 
-					
-					st.add(arrName, new Variable(arrType, offsetVal));
-					
-				}
 			
 			}
 			
@@ -1267,8 +1230,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 				freeReg(RESULT_REG);
 				freeReg(reg1);
 				freeReg(reg2);
-			}
-			else {
+			} else {
 				// Assignment
 				String varName = ctx.getParent().getChild(0).getText();
 				st.add(varName, new Variable(getType(varName), offsetVal));
@@ -1299,8 +1261,7 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			}
 			
 			return null;
-		} 
-		else if (ctx.getChild(0) instanceof Pair_elemContext) {
+		} else if (ctx.getChild(0) instanceof Pair_elemContext) {
 			addBL("p_check_null_pointer");
 			
 			if (ctx.getChild(0).getChild(0).equals("fst")) {
@@ -1336,8 +1297,8 @@ public class CodeGenerator extends BasicParserBaseVisitor<String>{
 			}
 			
 			freeReg(currReg);
-		}		
-		else if (ctx.getParent().getChild(0) instanceof TypeContext){
+			
+		} else if (ctx.getParent().getChild(0) instanceof TypeContext){
 			// Base
 			
 			if (ctx.getChild(0) instanceof ExprContext) {
